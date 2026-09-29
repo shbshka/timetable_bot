@@ -1,0 +1,203 @@
+start:
+  welcome_back: |
+    👋 Welcome back, *{first_name}*!
+
+    📌 *Current group:* `{group_name}`
+
+    Quick commands:
+    • /today — Today's schedule
+    • /week — Schedule for the week
+    • /group — Change group
+    • /language — Change language
+    • /help — Help & settings
+
+  welcome_new: |
+    👋 Hi, *{first_name}*!
+
+    This is *Raspisaniye Bot*.
+    The bot will display your current schedule and notify you about changes in Google Sheets.
+    Vibe-coded by *@shoobec* because I was fed up with loading Google Sheets every single time.
+
+    Select your study group:
+
+help: |
+  No one here can help you except yourself 🗿
+  (you can ping me at @shoobec)
+  Quick commands:
+  • /today — Today's schedule
+  • /week — Schedule for the week
+  • /group — Change group
+  • /language — Change language
+  • /help — Help & settings
+
+btns:
+  btn_today: "📅 Today"
+  btn_tomorrow: "➡️ Tomorrow"
+  btn_week: "📅 Full week"
+  btn_change_group: "⚙️ Change group"
+  btn_select_group: "🎓 Select group"
+  btn_language: "🌐 Language"
+  btn_home: "🏠 Main menu"
+
+language:
+  prompt: "Select interface language:"
+  changed: "Interface language: {language}."
+
+group:
+  choose_form:
+    step_1: "Step 1/2: Select form of study:"
+    step_2: |
+      Form: *{selected_form}*
+
+      Step 2/2: Select study year:
+  errors:
+    not_chosen: "⚠️ First select a group via /group"
+    not_found: |
+      ❌ *Group not found*
+
+      No group found for *{study_form}* ({year_num} year, enrollment year {enrollment_year}).
+      Please contact @shoobec, as something probably went down again.
+  success: |
+    ✅ *Group successfully selected!*
+
+    • *Form of study:* {study_form}
+    • *Year:* Year {year_num} ({enrollment_year})
+    • *Group code:* `{group_name}`
+
+    Send /today or /week to view the schedule.
+
+schedule:
+  weekdays:
+    monday: "monday"
+    tuesday: "tuesday"
+    wednesday: "wednesday"
+    thursday: "thursday"
+    friday: "friday"
+    saturday: "saturday"
+    sunday: "sunday"
+  months:
+    january: "January"
+    february: "February"
+    march: "March"
+    april: "April"
+    may: "May"
+    june: "June"
+    july: "July"
+    august: "August"
+    september: "September"
+    october: "October"
+    november: "November"
+    december: "December"
+  time_tbd: "Time TBD"
+  daily: |
+    📅 *Schedule for {group_name}*
+    📆 _{date_str}_
+
+  weekly: |
+    📅 *Weekly schedule for {group_name}*
+    ─────────────────────────
+    {week_schedule}
+
+  empty: |
+    No classes 🌚
+
+  updated: |
+    🔔 *Schedule updated for {group_name}*
+    📅 _{date_str}_
+    
+    /today — view today's schedule
+
+  submit_link:
+    success: |
+      ✅ Thank you! The schedule link for *{group_name}* was successfully sent to the admin.
+    accepted: |
+      ✅ The schedule link for *{group_name}* was approved by the admin.
+    rejected: |
+      ❌ The schedule link for *{group_name}* was rejected by the admin.
+    invalid: |
+      ❌ The schedule link for *{group_name}* was rejected by the bot due to an invalid link.
+
+  errors:
+    notification_failed: |
+      ⚠️ Failed to send notification to the admin. Please text @shoobec manually.
+    not_found: |
+      ❌ No schedule found in the database for *{group_name}*.
+      Got a link to it? Send it as a reply and wait a bit
+      (it takes a while, I confirm them manually).
+
+error:
+  schedule_fetch_failed: |
+    Oh, come on
+    ❌ Failed to load the schedule.
+    For goodness' sake, stop clicking the buttons, I already received a notification and I'm looking into it.
+  session_expired: |
+    ⚠️ Session expired. Send the last command again and restart.
+
+admin:
+  unauthorized:
+    callback: "❌ Uh-oh, you're not allowed here"
+    command: "⛔ Uh-oh, you aren't allowed to do this"
+  help: |
+    *Admin commands*
+    /attach <group> <link_or_ID> — attach schedule
+    /detach <group> — remove schedule link
+    /users <year_1-5> <form_HR_HRO_LR> — group users
+    /ban <chat_id> — block access to bot
+    /unban <chat_id> — restore access
+  usage:
+    users: "Usage: `/users <year 1-5> <HR|HRO|LR>`"
+    attach: "⚠ Usage: `/attach <group> <link_or_ID>`"
+    detach: "⚠️ Usage: `/detach <group>`"
+    ban: "Usage: `/ban <chat_id>` or `/unban <chat_id>`"
+  user: ""
+
+  users_usage: "Usage: `/users <year 1-5> <HR|HRO|LR>`"
+  group_not_found: "Group for year {course_year}, study form {study_form}, and enrollment year {enrollment_year} was not found."
+  users_empty: "There are no registered users in group *{group_name}* yet."
+  users_header: "*{group_name}* — users: {count}"
+  banned_status: " — *banned*"
+  ban_usage: "Usage: `/ban <chat_id>` or `/unban <chat_id>`"
+  user_banned: "Access for `{chat_id}` has been blocked."
+  user_already_banned: "User `{chat_id}` is already blocked."
+  user_unbanned: "Access for `{chat_id}` has been restored."
+  user_not_banned: "User `{chat_id}` is not blocked or not found."
+  banned_access: "⛔ Access to the bot is blocked."
+  sheet:
+    attached: |
+      ✅ *Schedule updated*
+      • *Group:* `{group_name}`
+      • *Sheet ID:* `{sheet_id}`
+      • *Cache:* updated
+      Old group links removed.
+    approved: |
+      ✅ *Link approved and attached*
+      • *Sheet ID:* `{sheet_id}`
+      • *Cache:* updated
+    rejected: |
+      ❌ *Link rejected*
+      • *Sheet ID:* `{sheet_id}`
+    invalid: "❌ Invalid Google Sheets link or ID."
+    detached: "🗑️ Schedule link removed for group `{group_name}`."
+    not_attached: "ℹ️ No link was attached for group `{group_name}`."
+    errors:
+      group_not_found: "❌ Group `{group_name}` not found."
+      submission_not_found: "❌ Link attachment request not found."
+  forwards:
+    link:
+      new_submission: |
+        📌 *New schedule link*
+
+        • Sender: {user_name} (@{user_username}, ID: {user_chat_id})
+        • Group: {group_name}
+        • Sheet ID: {sheet_id}
+        • Link: {link_text}
+      approve_button: ✅ Attach link to group {group_name}
+      reject_button: ❌ Reject link for group {group_name}
+      approve_sheet: |
+        ✅ *Schedule link approved!*
+
+        • Group: {group_name}
+        • Sheet ID: {sheet_id}
+    error:
+      error_occurred: |
+        ⚠️⚠️⚠️ An error occurred: {error_message}

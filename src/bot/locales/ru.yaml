@@ -1,0 +1,203 @@
+start:
+  welcome_back: |
+    👋 С возвращением, *{first_name}*!
+
+    📌 *Текущая группа:* `{group_name}`
+
+    Быстрые команды:
+    • /today — Расписание на сегодня
+    • /week — Расписание на неделю
+    • /group — Изменить группу
+    • /language — Изменить язык
+    • /help — Помощь и настройки
+
+  welcome_new: |
+    👋 Привет, *{first_name}*!
+
+    Это *Raspisaniye Bot*.
+    Бот будет отображать текущее расписание и уведомлять об изменениях в Google Sheets.
+    Навайбкодила я *@shoobec* потому что я манала каждый раз гугл щит грузить
+
+    Выбери свою учебную группу:
+
+help: |
+  Никто тебе здесь не поможет, кроме тебя самого 🗿
+  (можно пнуть меня по @shoobec)
+  Быстрые команды:
+  • /today — Расписание на сегодня
+  • /week — Расписание на неделю
+  • /group — Изменить группу
+  • /language — Изменить язык
+  • /help — Помощь и настройки
+
+btns:
+  btn_today: "📅 Сегодня"
+  btn_tomorrow: "➡️ Завтра"
+  btn_week: "📅 Вся неделя"
+  btn_change_group: "⚙️ Сменить группу"
+  btn_select_group: "🎓 Выбрать группу"
+  btn_language: "🌐 Язык"
+  btn_home: "🏠 Главное меню"
+
+language:
+  prompt: "Выберите язык интерфейса:"
+  changed: "Язык интерфейса: {language}."
+
+group:
+  choose_form:
+    step_1: "Шаг 1/2: Выбери форму обучения:"
+    step_2: |
+      Форма: *{selected_form}*
+
+      Шаг 2/2: Выбери курс:
+  errors:
+    not_chosen: "⚠️ Сначала выбери группу через /group"
+    not_found: |
+      ❌ *Группа не найдена*
+
+      Не найдена группа для *{study_form}* ({year_num} курс, год поступления {enrollment_year}).
+      Пожалуйста, свяжитесь с @shoobec, а то че-то опять прилегло, наверное.
+  success: |
+    ✅ *Группа успешно выбрана!*
+
+    • *Форма обучения:* {study_form}
+    • *Курс:* {year_num} курс ({enrollment_year})
+    • *Код группы:* `{group_name}`
+
+    Отправь /today или /week для просмотра расписания.
+
+schedule:
+  weekdays:
+    monday: "понедельник"
+    tuesday: "вторник"
+    wednesday: "среда"
+    thursday: "четверг"
+    friday: "пятница"
+    saturday: "суббота"
+    sunday: "воскресенье"
+  months:
+    january: "января"
+    february: "февраля"
+    march: "марта"
+    april: "апреля"
+    may: "мая"
+    june: "июня"
+    july: "июля"
+    august: "августа"
+    september: "сентября"
+    october: "октября"
+    november: "ноября"
+    december: "декабря"
+  time_tbd: "Время уточняется"
+  daily: |
+    📅 *Расписание для {group_name}*
+    📆 _{date_str}_
+
+  weekly: |
+    📅 *Расписание на неделю для {group_name}*
+    ─────────────────────────
+    {week_schedule}
+
+  empty: |
+    Пар нет 🌚
+
+  updated: |
+    🔔 *Расписание обновлено для {group_name}*
+    📅 _{date_str}_
+    
+    /today — посмотреть расписание на сегодня
+
+  submit_link:
+    success: |
+      ✅ Спасибо! Ссылка на расписание для *{group_name}* успешно отправлена админке.
+    accepted: |
+      ✅ Ссылка на расписание для *{group_name}* одобрена админкой.
+    rejected: |
+      ❌ Ссылка на расписание для *{group_name}* отклонена админкой.
+    invalid: |
+      ❌ Ссылка на расписание для *{group_name}* отклонена ботом по причине: некорректная ссылка.
+
+  errors:
+    notification_failed: |
+      ⚠️ Не удалось отправить уведомление админке. Напишите ручками @shoobec
+    not_found: |
+      ❌ В базе не найдено расписание для *{group_name}*.
+      Есть ссылка на него? Отправьте ее ответным сообщением и подождите
+      (долго, я руками подтверждаю).
+
+error:
+  schedule_fetch_failed: |
+    Да емае
+    ❌ Не удалось загрузить расписание.
+    Ради бога, не тыкайте кнопки, мне уже пришло уведомление, я буду разбираться.
+  session_expired: |
+    ⚠️ Сессия истекла. Отправьте последнюю команду и начните заново.
+
+admin:
+  unauthorized:
+    callback: "❌ Ай-яй, сюда низя"
+    command: "⛔ Ай-яй, тебе это делать низя"
+  help: |
+    *Команды администратора*
+    /attach <группа> <ссылка_или_ID> — прикрепить расписание
+    /detach <группа> — удалить ссылку расписания
+    /users <курс_1-5> <форма_HR_HRO_LR> — пользователи группы
+    /ban <chat_id> — запретить доступ к боту
+    /unban <chat_id> — восстановить доступ
+  usage:
+    users: "Использование: `/users <курс 1-5> <HR|HRO|LR>`"
+    attach: "⚠️️ Использование: `/attach <группа> <ссылка_или_ID>`"
+    detach: "⚠️ Использование: `/detach <группа>`"
+    ban: "Использование: `/ban <chat_id>` или `/unban <chat_id>`"
+  user: ""
+
+  users_usage: "Использование: `/users <курс 1-5> <HR|HRO|LR>`"
+  group_not_found: "Группа для курса {course_year}, формы {study_form} и года поступления {enrollment_year} не найдена."
+  users_empty: "В группе *{group_name}* пока нет зарегистрированных пользователей."
+  users_header: "*{group_name}* — пользователей: {count}"
+  banned_status: " — *заблокирован*"
+  ban_usage: "Использование: `/ban <chat_id>` или `/unban <chat_id>`"
+  user_banned: "Доступ для `{chat_id}` заблокирован."
+  user_already_banned: "Пользователь `{chat_id}` уже заблокирован."
+  user_unbanned: "Доступ для `{chat_id}` восстановлен."
+  user_not_banned: "Пользователь `{chat_id}` не заблокирован или не найден."
+  banned_access: "⛔ Доступ к боту запрещён."
+  sheet:
+    attached: |
+      ✅ *Расписание обновлено*
+      • *Группа:* `{group_name}`
+      • *ID таблицы:* `{sheet_id}`
+      • *Кэш:* обновлен
+      Старые ссылки группы удалены.
+    approved: |
+      ✅ *Ссылка одобрена и прикреплена*
+      • *ID таблицы:* `{sheet_id}`
+      • *Кэш:* обновлен
+    rejected: |
+      ❌ *Ссылка отклонена*
+      • *ID таблицы:* `{sheet_id}`
+    invalid: "❌ Некорректная ссылка или ID Google Sheets."
+    detached: "🗑️ Ссылка на расписание удалена для группы `{group_name}`."
+    not_attached: "ℹ️ Для группы `{group_name}` ссылка не была прикреплена."
+    errors:
+      group_not_found: "❌ Группа `{group_name}` не найдена."
+      submission_not_found: "❌ Заявка на прикрепление ссылки не найдена."
+  forwards:
+    link:
+      new_submission: |
+        📌 *Новая ссылка на расписание*
+
+        • Отправитель: {user_name} (@{user_username}, ID: {user_chat_id})
+        • Группа: {group_name}
+        • Sheet ID: {sheet_id}
+        • Ссылка: {link_text}
+      approve_button: ✅ Прикрепить ссылку к группе {group_name}
+      reject_button: ❌ Отклонить ссылку для группы {group_name}
+      approve_sheet: |
+        ✅ *Ссылка на расписание одобрена!*
+
+        • Группа: {group_name}
+        • Sheet ID: {sheet_id}
+    error:
+      error_occurred: |
+        ⚠️⚠️⚠️ Произошла ошибка: {error_message}

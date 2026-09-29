@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "timetable-bot"
+version = "0.1.0"
+description = "A Telegram bot for university timetable lookup and schedule updates"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+	"google-auth>=2.0",
+	"httpx>=0.27",
+	"python-dotenv>=1.0",
+	"python-telegram-bot[job-queue]>=22.0,<23.0",
+	"PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+	"pytest>=8.0",
+	"ruff>=0.5",
+]
+
+[project.scripts]
+timetable-bot = "main:main"
+
+[tool.setuptools]
+py-modules = ["config", "main"]
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+[tool.setuptools.package-data]
+src = ["bot/locales/*.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+exclude = ["Include", "Lib", "Scripts", "build", "dist"]

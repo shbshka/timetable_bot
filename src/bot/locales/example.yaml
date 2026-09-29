@@ -1,0 +1,116 @@
+# ====================================================================================
+# Localization Structure & Variable Guide (example.yaml)
+# Format: YAML
+# Parsing: Markdown
+# Variables: {variable_name}, used for dynamic content insertion, inserted at runtime.
+# ====================================================================================
+
+start:
+  welcome_back: "Welcome message for returning users. Variables: {first_name}, {group_name}"
+  welcome_new: "Welcome message for new users prompting group selection. Variables: {first_name}"
+
+help: "Help text and general support information. Variables: none"
+
+btns:
+  btn_today: "Text for 'Today' schedule button. Variables: none"
+  btn_tomorrow: "Text for 'Tomorrow' schedule button. Variables: none"
+  btn_week: "Text for 'Full Week' schedule button. Variables: none"
+  btn_change_group: "Text for 'Change Group' button. Variables: none"
+  btn_select_group: "Text for 'Select Group' button. Variables: none"
+  btn_language: "Text for 'Language' button. Variables: none"
+  btn_home: "Text for 'Main Menu' navigation button. Variables: none"
+
+language:
+  prompt: "Prompt for selecting interface language. Variables: none"
+  changed: "Confirmation message after changing interface language. Variables: {language}"
+
+group:
+  choose_form:
+    step_1: "Prompt for selecting form of study (Step 1). Variables: none"
+    step_2: "Prompt for selecting year of study (Step 2). Variables: {selected_form}"
+  errors:
+    not_chosen: "Error shown when user attempts action without selecting group. Variables: none"
+    not_found: "Error message when group is not found. Variables: {study_form}, {year_num}, {enrollment_year}"
+  success: "Group selection confirmation message. Variables: {study_form}, {year_num}, {enrollment_year}, {group_name}"
+
+schedule:
+  weekdays:
+    monday: "Localized name for Monday. Variables: none"
+    tuesday: "Localized name for Tuesday. Variables: none"
+    wednesday: "Localized name for Wednesday. Variables: none"
+    thursday: "Localized name for Thursday. Variables: none"
+    friday: "Localized name for Friday. Variables: none"
+    saturday: "Localized name for Saturday. Variables: none"
+    sunday: "Localized name for Sunday. Variables: none"
+  months:
+    january: "Localized name for January. Variables: none"
+    february: "Localized name for February. Variables: none"
+    march: "Localized name for March. Variables: none"
+    april: "Localized name for April. Variables: none"
+    may: "Localized name for May. Variables: none"
+    june: "Localized name for June. Variables: none"
+    july: "Localized name for July. Variables: none"
+    august: "Localized name for August. Variables: none"
+    september: "Localized name for September. Variables: none"
+    october: "Localized name for October. Variables: none"
+    november: "Localized name for November. Variables: none"
+    december: "Localized name for December. Variables: none"
+  time_tbd: "Text shown when class time is to be determined. Variables: none"
+  daily: "Daily schedule header and date container. Variables: {group_name}, {date_str}"
+  weekly: "Weekly schedule header and list container. Variables: {group_name}, {week_schedule}"
+  empty: "Message displayed when there are no scheduled classes. Variables: none"
+  updated: "Notification sent when schedule is updated. Variables: {group_name}, {date_str}"
+  submit_link:
+    success: "Confirmation after user submits a missing schedule link. Variables: {group_name}"
+    accepted: "Notification sent to user when their submitted schedule link is approved. Variables: {group_name}"
+    rejected: "Notification sent to user when their submitted schedule link is rejected. Variables: {group_name}"
+    invalid: "Notification sent to user when their submitted schedule link is invalid. Variables: {group_name}"
+  errors:
+    notification_failed: "Error when notification to admin fails. Variables: none"
+    not_found: "Error message when schedule is not found in database. Variables: {group_name}"
+
+error:
+  schedule_fetch_failed: "Error message when fetching schedule fails. Variables: none"
+  session_expired: "Message when user interactive session expires. Variables: none"
+
+admin:
+  unauthorized:
+    callback: "Alert text for unauthorized inline button clicks. Variables: none"
+    command: "Error message for unauthorized admin command execution. Variables: none"
+  help: "Admin commands list and documentation. Variables: none"
+  usage:
+    users: "Command usage instructions for /users. Variables: none"
+    attach: "Command usage instructions for /attach. Variables: none"
+    detach: "Command usage instructions for /detach. Variables: none"
+    ban: "Command usage instructions for /ban and /unban. Variables: none"
+  user: "Placeholder/container for user administration text. Variables: none"
+  users_usage: "Command usage instructions for /users. Variables: none"
+  group_not_found: "Admin error message when target group is not found. Variables: {course_year}, {study_form}, {enrollment_year}"
+  users_empty: "Message when no users are found in requested group. Variables: {group_name}"
+  users_header: "Header for list of users in a group. Variables: {group_name}, {count}"
+  banned_status: "Status suffix label for banned users. Variables: none"
+  ban_usage: "Command usage instructions for /ban and /unban. Variables: none"
+  user_banned: "Confirmation message after banning user. Variables: {chat_id}"
+  user_already_banned: "Notice when target user is already banned. Variables: {chat_id}"
+  user_unbanned: "Confirmation message after unbanning user. Variables: {chat_id}"
+  user_not_banned: "Notice when target user is not banned or found. Variables: {chat_id}"
+  banned_access: "Denial message displayed to banned users trying to use bot. Variables: none"
+  sheet:
+    attached: "Confirmation message after attaching schedule link to group. Variables: {group_name}, {sheet_id}"
+    approved: "Confirmation message after approving submitted link. Variables: {sheet_id}"
+    rejected: "Confirmation message after rejecting submitted link. Variables: {sheet_id}"
+    invalid: "Error message when provided Google Sheets URL or ID is invalid. Variables: none"
+    detached: "Confirmation message after removing schedule link from group. Variables: {group_name}"
+    not_attached: "Notice when target group had no active schedule link to detach. Variables: {group_name}"
+    errors:
+      group_not_found: "Error message when target group for sheet attachment is not found. Variables: {group_name}"
+      submission_not_found: "Error message when schedule attachment submission request is not found. Variables: none"
+
+  forwards:
+    link:
+      new_submission: "Notification to admin about user-submitted schedule link. Variables: {user_name}, {user_username}, {user_chat_id}, {group_name}, {sheet_id}, {link_text}"
+      approve_button: "Text for approving link button. Variables: {group_name}"
+      reject_button: "Text for rejecting link button. Variables: {group_name}"
+      approve_sheet: "Confirmation message after link approval. Variables: {group_name}, {sheet_id}"
+    error:
+      error_occurred: "Notification to admin when system error occurs. Variables: {error_message}"

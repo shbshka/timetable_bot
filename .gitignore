@@ -1,0 +1,37 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+credentials.json
+*.pem
+*.key
+
+# Python bytecode and packaging
+__pycache__/
+*.py[cod]
+*.pyd
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments (including the current root-level venv)
+.venv/
+venv/
+/Include/
+/Lib/
+/Scripts/
+/pyvenv.cfg
+
+# Local runtime state
+/logs/
+/schedule_snapshots/*.json
+/database.db
+/src/db/*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
