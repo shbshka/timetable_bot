@@ -7,7 +7,7 @@ from typing import Optional
 from config import SPREADSHEET_ID, SNAPSHOTS_DIR
 from src.db.repository import get_schedule_cache_state, get_schedule_for_group as read_group_schedule, replace_schedule_for_sheet
 from src.parser.interface import ParsedSchedule, ScheduleGrid
-from src.parser.registry import get_parser
+from src.parser.registry import parse_with_first_successful_parser
 from src.services.google_sheets import fetch_sheet_data_with_sa
 from src.utils.logger import logger
 
@@ -34,10 +34,13 @@ def refresh_schedule_cache_from_latest_snapshot(sheet_id: str) -> bool:
         grid = payload["grid"]
         content_hash = schedule_grid_hash(grid)
         academic_year = _current_academic_year()
-        lectures = get_parser().parse_all(grid)
-        if not lectures:
-            logger.error(f"Latest schedule snapshot for '{sheet_id}' contains no parsed lectures.")
+
+        try:
+            parser_name, parser, lectures = parse_with_first_successful_parser(grid)
+        except ValueError as e:
+            logger.error(f"Could not parse schedule snapshot for '{sheet_id}': {e}", exc_info=True)
             return False
+        
         cache_state = get_schedule_cache_state(sheet_id)
         if (
             cache_state
@@ -56,7 +59,7 @@ def refresh_schedule_cache_from_latest_snapshot(sheet_id: str) -> bool:
         )
         logger.info(
             f"Loaded {lecture_count} schedule entries from latest snapshot "
-            f"for spreadsheet '{sheet_id}'."
+            f"for spreadsheet '{sheet_id}' using parser '{parser_name}'."
         )
         return True
     except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as e:
@@ -104,7 +107,8 @@ async def fetch_and_parse_schedule(
     """Fetch schedule cells, then hand them to the layout-specific parser."""
     grid = await fetch_schedule_grid(sheet_id=sheet_id)
     logger.info(f"Fetched {len(grid)} rows from spreadsheet '{sheet_id or SPREADSHEET_ID}'")
-    return get_parser().parse(
+    _, parser, _ = parse_with_first_successful_parser(grid)
+    return parser.parse(
         grid,
         target_date=target_date,
         fetch_full_week=fetch_full_week,

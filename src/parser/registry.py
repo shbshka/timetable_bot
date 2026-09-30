@@ -1,12 +1,16 @@
-from typing import Dict, Optional
+from typing import Dict, Iterator, Optional
 
 from config import SCHEDULE_PARSER
 from src.parser.implementations.awful_uni_grid import AwfulUniGridParser
+from src.parser.implementations.four_week_grid import FourWeekGridParser
 from src.parser.interface import ScheduleParser
+from src.parser.models import Lecture
 
 _PARSERS: Dict[str, ScheduleParser] = {
+    "four_week_grid": FourWeekGridParser(),
     "awful_uni_grid": AwfulUniGridParser(),
 }
+_FALLBACK_PARSER_NAME = "awful_uni_grid"
 
 
 def register_parser(name: str, parser: ScheduleParser, *, replace: bool = False) -> None:
@@ -17,6 +21,32 @@ def register_parser(name: str, parser: ScheduleParser, *, replace: bool = False)
     if normalized_name in _PARSERS and not replace:
         raise ValueError(f"A parser named '{normalized_name}' is already registered")
     _PARSERS[normalized_name] = parser
+
+
+def iter_parser_chain() -> Iterator[tuple[str, ScheduleParser]]:
+    """Yield registered parsers in detection order, with the legacy parser last."""
+    for name, parser in _PARSERS.items():
+        if name != _FALLBACK_PARSER_NAME:
+            yield name, parser
+    if _FALLBACK_PARSER_NAME in _PARSERS:
+        yield _FALLBACK_PARSER_NAME, _PARSERS[_FALLBACK_PARSER_NAME]
+
+
+def parse_with_first_successful_parser(grid) -> tuple[str, ScheduleParser, list[Lecture]]:
+    """Parse a grid with the first parser that produces at least one lecture."""
+    failures = []
+    for name, parser in iter_parser_chain():
+        try:
+            lectures = parser.parse_all(grid)
+        except Exception as exc:
+            failures.append(f"{name}: {exc}")
+            continue
+        if lectures:
+            return name, parser, lectures
+        failures.append(f"{name}: empty timetable")
+
+    details = "; ".join(failures) or "no parsers registered"
+    raise ValueError(f"No schedule parser could parse the timetable: {details}")
 
 
 def get_parser(name: Optional[str] = None) -> ScheduleParser:
