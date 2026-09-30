@@ -34,6 +34,7 @@ btns:
   btn_today: "📅 Today"
   btn_tomorrow: "➡️ Tomorrow"
   btn_week: "📅 Full week"
+  btn_current_week: "📅 Current week"
   btn_change_group: "⚙️ Change group"
   btn_select_group: "🎓 Select group"
   btn_language: "🌐 Language"

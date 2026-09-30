@@ -127,7 +127,10 @@ async def render_daily_schedule(update: Update, context: ContextTypes.DEFAULT_TY
                 InlineKeyboardButton(f"{next_date.strftime('%d.%m')} ➡️", callback_data=next_callback),
             ],
             [
-                InlineKeyboardButton(get_user_msg(chat_id, "btns.btn_week"), callback_data="cmd_week")
+                InlineKeyboardButton(
+                    get_user_msg(chat_id, "btns.btn_week"),
+                    callback_data=f"cmd_week:{target_date.strftime('%Y-%m-%d')}",
+                )
             ],
             [
                 InlineKeyboardButton(get_user_msg(chat_id, "btns.btn_home"), callback_data="cmd_home")
@@ -169,8 +172,12 @@ async def tomorrow_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     await render_daily_schedule(update, context, datetime.now() + timedelta(days=1))
 
 
-async def week_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handles the /week command."""
+async def render_weekly_schedule(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    target_date: datetime,
+) -> None:
+    """Render a selected calendar week with week-level pagination controls."""
     chat_id = update.effective_chat.id
     user_context, error_msg = await _get_schedule_for_user(chat_id)
 
@@ -188,6 +195,7 @@ async def week_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         weekly_schedule = get_cached_schedule(
             sheet_id=sheet_id,
             group_id=user_context["group_id"],
+            target_date=target_date,
             fetch_full_week=True,
         )
         response_text = format_weekly_schedule(
@@ -196,14 +204,27 @@ async def week_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             locale=get_user_locale(chat_id),
         )
 
+        week_start = target_date - timedelta(days=target_date.weekday())
+        previous_week = week_start - timedelta(days=7)
+        next_week = week_start + timedelta(days=7)
+        current_week = datetime.now() - timedelta(days=datetime.now().weekday())
         keyboard = [
             [
-                InlineKeyboardButton(get_user_msg(chat_id, "btns.btn_today"), callback_data="cmd_today"),
-                InlineKeyboardButton(get_user_msg(chat_id, "btns.btn_tomorrow"), callback_data="cmd_tomorrow")
+                InlineKeyboardButton(
+                    f"⬅️ {previous_week.strftime('%d.%m')}",
+                    callback_data=f"cmd_week:{previous_week.strftime('%Y-%m-%d')}",
+                ),
+                InlineKeyboardButton(
+                    get_user_msg(chat_id, "btns.btn_current_week"),
+                    callback_data=f"cmd_week:{current_week.strftime('%Y-%m-%d')}",
+                ),
+                InlineKeyboardButton(
+                    f"{next_week.strftime('%d.%m')} ➡️",
+                    callback_data=f"cmd_week:{next_week.strftime('%Y-%m-%d')}",
+                ),
             ],
-            [
-                InlineKeyboardButton(get_user_msg(chat_id, "btns.btn_home"), callback_data="cmd_home")
-            ]
+            [InlineKeyboardButton(get_user_msg(chat_id, "btns.btn_today"), callback_data="cmd_today")],
+            [InlineKeyboardButton(get_user_msg(chat_id, "btns.btn_home"), callback_data="cmd_home")],
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -231,6 +252,11 @@ async def week_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             await update.effective_message.reply_text(fail_msg)
 
 
+async def week_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handles the /week command."""
+    await render_weekly_schedule(update, context, datetime.now())
+
+
 async def handle_schedule_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handles inline navigation buttons including pagination (e.g., 'cmd_day:2026-09-26')."""
     query = update.callback_query
@@ -243,7 +269,14 @@ async def handle_schedule_callbacks(update: Update, context: ContextTypes.DEFAUL
     elif action == "cmd_tomorrow":
         await render_daily_schedule(update, context, datetime.now() + timedelta(days=1))
     elif action == "cmd_week":
-        await week_command(update, context)
+        await render_weekly_schedule(update, context, datetime.now())
+    elif action.startswith("cmd_week:"):
+        date_str = action.split(":", 1)[1]
+        try:
+            target_date = datetime.strptime(date_str, "%Y-%m-%d")
+            await render_weekly_schedule(update, context, target_date)
+        except ValueError:
+            logger.error(f"Invalid week date format in callback_data: {date_str}")
     elif action.startswith("cmd_day:"):
         date_str = action.split(":", 1)[1]
         try:

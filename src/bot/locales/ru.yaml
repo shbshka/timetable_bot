@@ -34,6 +34,7 @@ btns:
   btn_today: "📅 Сегодня"
   btn_tomorrow: "➡️ Завтра"
   btn_week: "📅 Вся неделя"
+  btn_current_week: "📅 Текущая неделя"
   btn_change_group: "⚙️ Сменить группу"
   btn_select_group: "🎓 Выбрать группу"
   btn_language: "🌐 Язык"
