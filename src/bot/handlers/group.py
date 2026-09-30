@@ -1,20 +1,17 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import Update
 from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
 
 from src.db.repository import get_group_by_form_and_year, set_user_group
 from src.utils.messages import get_user_msg
 from src.parser.academic_year import enrollment_year
+from src.bot.keyboards.group import form_selection_keyboard, year_selection_keyboard
 
-from config import STUDY_FORMS, YEARS
+from config import STUDY_FORMS
 
 async def choose_form_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Entry point; Sends inline keyboard buttons to choose a study form."""
     chat_id = update.effective_chat.id
-    keyboard = [
-        [InlineKeyboardButton(form, callback_data=f"set_form:{form}")]
-        for form in STUDY_FORMS
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    reply_markup = form_selection_keyboard(STUDY_FORMS)
     
     if update.message:
         await update.message.reply_text(get_user_msg(chat_id, "group.choose_form.step_1"), reply_markup=reply_markup)
@@ -30,11 +27,7 @@ async def handle_form_selection(update: Update, context: ContextTypes.DEFAULT_TY
     selected_form = query.data.split(":")[1]
     context.user_data["study_form"] = selected_form
 
-    keyboard = [
-        [InlineKeyboardButton(f"Year {year}", callback_data=f"set_year:{year}")]
-        for year in YEARS
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    reply_markup = year_selection_keyboard()
 
     await query.edit_message_text(
         get_user_msg(update.effective_chat.id, "group.choose_form.step_2", selected_form=selected_form),

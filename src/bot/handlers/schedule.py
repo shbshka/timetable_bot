@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import Update
 from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 from telegram.error import BadRequest
 
 from src.db.repository import get_user_locale, get_user_schedule_context
 from src.parser.schedule_parser import get_cached_schedule
 from src.services.admin_notifier import forward_message_to_admin, notify_admin_of_error
+from src.bot.keyboards.schedule import daily_schedule_keyboard, weekly_schedule_keyboard
 from src.utils.formatter import format_daily_schedule, format_weekly_schedule
 from src.utils.logger import get_logger
 
@@ -114,29 +115,7 @@ async def render_daily_schedule(update: Update, context: ContextTypes.DEFAULT_TY
             locale=get_user_locale(chat_id),
         )
 
-        prev_date = target_date - timedelta(days=1)
-        next_date = target_date + timedelta(days=1)
-
-        prev_callback = f"cmd_day:{prev_date.strftime('%Y-%m-%d')}"
-        next_callback = f"cmd_day:{next_date.strftime('%Y-%m-%d')}"
-
-        keyboard = [
-            [
-                InlineKeyboardButton(f"⬅️ {prev_date.strftime('%d.%m')}", callback_data=prev_callback),
-                InlineKeyboardButton(get_user_msg(chat_id, "btns.btn_today"), callback_data="cmd_today"),
-                InlineKeyboardButton(f"{next_date.strftime('%d.%m')} ➡️", callback_data=next_callback),
-            ],
-            [
-                InlineKeyboardButton(
-                    get_user_msg(chat_id, "btns.btn_week"),
-                    callback_data=f"cmd_week:{target_date.strftime('%Y-%m-%d')}",
-                )
-            ],
-            [
-                InlineKeyboardButton(get_user_msg(chat_id, "btns.btn_home"), callback_data="cmd_home")
-            ]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
+        reply_markup = daily_schedule_keyboard(chat_id, target_date)
 
         if update.callback_query:
             try:
@@ -204,29 +183,7 @@ async def render_weekly_schedule(
             locale=get_user_locale(chat_id),
         )
 
-        week_start = target_date - timedelta(days=target_date.weekday())
-        previous_week = week_start - timedelta(days=7)
-        next_week = week_start + timedelta(days=7)
-        current_week = datetime.now() - timedelta(days=datetime.now().weekday())
-        keyboard = [
-            [
-                InlineKeyboardButton(
-                    f"⬅️ {previous_week.strftime('%d.%m')}",
-                    callback_data=f"cmd_week:{previous_week.strftime('%Y-%m-%d')}",
-                ),
-                InlineKeyboardButton(
-                    get_user_msg(chat_id, "btns.btn_current_week"),
-                    callback_data=f"cmd_week:{current_week.strftime('%Y-%m-%d')}",
-                ),
-                InlineKeyboardButton(
-                    f"{next_week.strftime('%d.%m')} ➡️",
-                    callback_data=f"cmd_week:{next_week.strftime('%Y-%m-%d')}",
-                ),
-            ],
-            [InlineKeyboardButton(get_user_msg(chat_id, "btns.btn_today"), callback_data="cmd_today")],
-            [InlineKeyboardButton(get_user_msg(chat_id, "btns.btn_home"), callback_data="cmd_home")],
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
+        reply_markup = weekly_schedule_keyboard(chat_id, target_date)
 
         if update.callback_query:
             try:

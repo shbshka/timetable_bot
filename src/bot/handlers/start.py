@@ -1,8 +1,9 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import Update
 from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
 
 from src.bot.handlers.group import choose_form_command
 from src.bot.handlers.language import language_command
+from src.bot.keyboards.start import main_menu_keyboard
 from src.db.repository import get_user_schedule_context, register_user_if_not_exists
 from src.utils.logger import get_logger
 
@@ -36,21 +37,9 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             first_name=first_name, 
             group_name=user_context["group_name"]
         )
-        keyboard = [
-            [
-                InlineKeyboardButton(get_user_msg(chat_id, "btns.btn_today"), callback_data="cmd_today"),
-                InlineKeyboardButton(get_user_msg(chat_id, "btns.btn_change_group"), callback_data="cmd_change_group"),
-            ],
-            [InlineKeyboardButton(get_user_msg(chat_id, "btns.btn_language"), callback_data="cmd_language")],
-        ]
     else:
         welcome_text = get_user_msg(chat_id, "start.welcome_new", first_name=first_name)
-        keyboard = [
-            [InlineKeyboardButton(get_user_msg(chat_id, "btns.btn_select_group"), callback_data="start_group_setup")],
-            [InlineKeyboardButton(get_user_msg(chat_id, "btns.btn_language"), callback_data="cmd_language")],
-        ]
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    reply_markup = main_menu_keyboard(chat_id, bool(user_context and user_context.get("group_name")))
 
     if update.message:
             await update.message.reply_text(welcome_text, reply_markup=reply_markup, parse_mode="HTML")

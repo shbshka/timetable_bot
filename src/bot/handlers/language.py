@@ -1,19 +1,11 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import Update
 from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
 
 from src.db.repository import get_user_locale, set_user_locale
 from src.utils.messages import get_user_msg
+from src.bot.keyboards.language import language_keyboard
 
 LANGUAGE_NAMES = {"en": "English", "ru": "Русский"}
-
-
-def _language_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        [
-            [InlineKeyboardButton("🇬🇧 English", callback_data="set_locale:en")],
-            [InlineKeyboardButton("🇷🇺 Русский", callback_data="set_locale:ru")],
-        ]
-    )
 
 
 async def language_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -23,9 +15,9 @@ async def language_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     chat_id = update.effective_chat.id
     text = get_user_msg(chat_id, "language.prompt")
     if update.callback_query:
-        await update.callback_query.edit_message_text(text, reply_markup=_language_keyboard())
+        await update.callback_query.edit_message_text(text, reply_markup=language_keyboard())
     elif update.effective_message:
-        await update.effective_message.reply_text(text, reply_markup=_language_keyboard())
+        await update.effective_message.reply_text(text, reply_markup=language_keyboard())
 
 
 async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
