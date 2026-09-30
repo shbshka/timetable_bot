@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from html import escape
 
 from telegram import Update
@@ -12,6 +10,7 @@ from src.db.repository import (
     set_user_banned,
 )
 from src.utils.messages import get_user_msg
+from src.parser.academic_year import enrollment_year
 from config import STUDY_FORMS, YEARS
 
 
@@ -39,10 +38,8 @@ async def users_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         await update.effective_message.reply_text(get_user_msg(chat_id, "admin.users_usage"), parse_mode="HTML")
         return
 
-    now = datetime.now()
-    academic_start_year = now.year if now.month >= 8 else now.year - 1
-    enrollment_year = academic_start_year - course_year + 1
-    group = get_group_by_form_and_year(study_form=study_form, enrollment_year=enrollment_year)
+    group_enrollment_year = enrollment_year(course_year)
+    group = get_group_by_form_and_year(study_form=study_form, enrollment_year=group_enrollment_year)
     if not group:
         await update.effective_message.reply_text(
             get_user_msg(
@@ -50,7 +47,7 @@ async def users_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 "admin.group_not_found",
                 course_year=course_year,
                 study_form=study_form,
-                enrollment_year=enrollment_year,
+                enrollment_year=group_enrollment_year,
             ),
             parse_mode="HTML",
         )

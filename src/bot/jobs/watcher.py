@@ -42,7 +42,10 @@ async def refresh_schedules_on_startup() -> None:
             parser_name, _, lectures = parse_with_first_successful_parser(grid)
             parsed_count = len(lectures)
 
-            refresh_schedule_cache_from_latest_snapshot(sheet_id)
+            refresh_schedule_cache_from_latest_snapshot(
+                sheet_id,
+                fallback_level=links[0].get("study_form"),
+            )
             cache_state = get_schedule_cache_state(sheet_id)
             if (
                 not cache_state
@@ -77,7 +80,10 @@ async def check_sheet_updates_job(context: ContextTypes.DEFAULT_TYPE) -> None:
             if grid is None:
                 continue
 
-            refreshed = refresh_schedule_cache_from_latest_snapshot(sheet_id)
+            refreshed = refresh_schedule_cache_from_latest_snapshot(
+                sheet_id,
+                fallback_level=links[0].get("study_form"),
+            )
             cache_state = get_schedule_cache_state(sheet_id)
             if not cache_state:
                 continue

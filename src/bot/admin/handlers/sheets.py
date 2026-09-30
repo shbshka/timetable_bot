@@ -6,6 +6,7 @@ from src.db.repository import (
     delete_pending_submission,
     detach_group_spreadsheet,
     get_group_by_name,
+    get_user_schedule_context,
     get_schedule_cache_state,
     set_group_spreadsheet,
 )
@@ -17,12 +18,12 @@ from src.utils.spreadsheets_link_parser import extract_sheet_id
 from src.db.repository import get_pending_submission
 
 
-async def _refresh_sheet_cache(sheet_id: str) -> bool:
+async def _refresh_sheet_cache(sheet_id: str, fallback_level: str | None = None) -> bool:
     grid = await fetch_sheet_data_with_sa(sheet_id=sheet_id)
     if grid is None:
         return False
 
-    refresh_schedule_cache_from_latest_snapshot(sheet_id)
+    refresh_schedule_cache_from_latest_snapshot(sheet_id, fallback_level=fallback_level)
     cache_state = get_schedule_cache_state(sheet_id)
     return bool(
         cache_state
@@ -53,8 +54,17 @@ async def handle_sheet_approval_callback(update: Update, context: ContextTypes.D
     group_name = submission["group_name"]
     sheet_id = submission["sheet_id"]
     user_chat_id = submission["user_chat_id"]
+    group_info = get_group_by_name(group_name)
+    user_group = get_user_schedule_context(user_chat_id)
+    fallback_level = (
+        user_group["study_form"]
+        if user_group
+        else group_info["study_form"]
+        if group_info
+        else None
+    )
 
-    if await _refresh_sheet_cache(sheet_id):
+    if group_info and await _refresh_sheet_cache(sheet_id, fallback_level=fallback_level):
         set_group_spreadsheet(group_id=group_id, sheet_id=sheet_id)
         logger.info(f"Admin {update.effective_user.id} attached Sheet '{sheet_id}' to Group {group_id}")
         await query.edit_message_text(
@@ -92,6 +102,7 @@ async def handle_sheet_approval_callback(update: Update, context: ContextTypes.D
 
     try:
         delete_pending_submission(submission_id)
+        logger.info(f"Pending submission {submission_id} deleted after processing approval.")
     except Exception as e:
         logger.error(f"Failed to delete pending submission {submission_id}: {e}", exc_info=True)
 
@@ -137,6 +148,7 @@ async def handle_sheet_rejection_callback(update: Update, context: ContextTypes.
 
     try:
         delete_pending_submission(submission_id)
+        logger.info(f"Pending submission {submission_id} deleted after processing rejection.")
     except Exception as e:
         logger.error(f"Failed to delete pending submission {submission_id}: {e}", exc_info=True)
 
@@ -170,7 +182,7 @@ async def attach_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         )
         return
 
-    if await _refresh_sheet_cache(sheet_id):
+    if await _refresh_sheet_cache(sheet_id, fallback_level=group_info["study_form"]):
         set_group_spreadsheet(group_id=group_info["id"], sheet_id=sheet_id)
 
         await update.message.reply_text(

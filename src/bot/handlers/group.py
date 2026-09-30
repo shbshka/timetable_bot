@@ -1,9 +1,9 @@
-from datetime import datetime
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
 
 from src.db.repository import get_group_by_form_and_year, set_user_group
 from src.utils.messages import get_user_msg
+from src.parser.academic_year import enrollment_year
 
 from config import STUDY_FORMS, YEARS
 
@@ -56,11 +56,9 @@ async def handle_year_selection(update: Update, context: ContextTypes.DEFAULT_TY
         return
 
     year_num = int(query.data.split(":")[1])
-    now = datetime.now()
-    academic_start_year = now.year if now.month >= 8 else now.year - 1
-    enrollment_year = academic_start_year - (year_num - 1)
+    group_enrollment_year = enrollment_year(year_num)
 
-    group_info = get_group_by_form_and_year(study_form=study_form, enrollment_year=enrollment_year)
+    group_info = get_group_by_form_and_year(study_form=study_form, enrollment_year=group_enrollment_year)
 
     if not group_info:
         await query.edit_message_text(
@@ -77,7 +75,7 @@ async def handle_year_selection(update: Update, context: ContextTypes.DEFAULT_TY
     context.user_data.clear()
 
     await query.edit_message_text(
-        get_user_msg(chat_id, "group.success", study_form=study_form, year_num=year_num, enrollment_year=enrollment_year, group_name=group_name),
+        get_user_msg(chat_id, "group.success", study_form=study_form, year_num=year_num, enrollment_year=group_enrollment_year, group_name=group_name),
         parse_mode="HTML"
     )
 
