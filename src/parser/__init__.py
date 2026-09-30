@@ -1,1 +1,1 @@
-__all__ = ["*"]
+"""Timetable parser interfaces, models, and parser selection."""

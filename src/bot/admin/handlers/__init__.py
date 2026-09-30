@@ -1,1 +1,1 @@
-__all__ = ["*"]
+"""Handlers for administrative bot commands and callbacks."""

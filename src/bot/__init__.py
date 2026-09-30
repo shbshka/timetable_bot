@@ -1,1 +1,1 @@
-__all__ = ["*"]
+"""Telegram bot application and runtime integration."""

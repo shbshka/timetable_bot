@@ -1,1 +1,1 @@
-__all__ = ["*"]
+"""Administrative authentication, routing, and handlers."""

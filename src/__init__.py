@@ -1,1 +1,1 @@
-__all__ = ["*"]
+"""Timetable bot application package."""
