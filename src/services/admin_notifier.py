@@ -2,10 +2,12 @@ from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from html import escape
 from config import ADMIN_ID
 from src.db.repository import get_group_by_name
-from src.utils.logger import logger
+from src.utils.logger import get_logger
 from src.utils.spreadsheets_link_parser import extract_sheet_id
 from src.utils.messages import get_user_msg
 from src.db.repository import create_pending_submission
+
+logger = get_logger("admin")
 
 
 async def forward_message_to_admin(
@@ -46,11 +48,11 @@ async def forward_message_to_admin(
 
         keyboard.append([
             InlineKeyboardButton(
-                get_user_msg(ADMIN_ID, "admin.forwards.link.approve_button"),
+                get_user_msg(ADMIN_ID, "admin.forwards.link.approve_button", group_name=group_name),
                 callback_data = f"approve_sheet:{sub_id}"
             ),
             InlineKeyboardButton(
-                get_user_msg(ADMIN_ID, "admin.forwards.link.reject_button"),
+                get_user_msg(ADMIN_ID, "admin.forwards.link.reject_button", group_name=group_name),
                 callback_data=f"reject_sheet:{sub_id}"
             )
         ])

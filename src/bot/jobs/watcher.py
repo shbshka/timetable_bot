@@ -11,7 +11,9 @@ from src.db.repository import (
 )
 from src.parser.schedule_parser import refresh_schedule_cache_from_latest_snapshot, schedule_grid_hash
 from src.parser.registry import parse_with_first_successful_parser
-from src.utils.logger import logger
+from src.utils.logger import get_logger
+
+logger = get_logger("jobs")
 from src.utils.messages import get_user_msg
 
 

@@ -1,7 +1,9 @@
 import sys
 from config import TELEGRAM_BOT_TOKEN
 from src.bot.app import create_bot_app
-from src.utils.logger import logger
+from src.utils.logger import get_logger
+
+logger = get_logger("app")
 
 
 def main() -> None:

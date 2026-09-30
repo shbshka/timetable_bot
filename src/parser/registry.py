@@ -5,6 +5,9 @@ from src.parser.implementations.awful_uni_grid import AwfulUniGridParser
 from src.parser.implementations.four_week_grid import FourWeekGridParser
 from src.parser.interface import ScheduleParser
 from src.parser.models import Lecture
+from src.utils.logger import get_logger
+
+logger = get_logger("parser")
 
 _PARSERS: Dict[str, ScheduleParser] = {
     "four_week_grid": FourWeekGridParser(),
@@ -36,12 +39,14 @@ def parse_with_first_successful_parser(grid) -> tuple[str, ScheduleParser, list[
     """Parse a grid with the first parser that produces at least one lecture."""
     failures = []
     for name, parser in iter_parser_chain():
+        logger.debug("Trying schedule parser '%s'.", name)
         try:
             lectures = parser.parse_all(grid)
         except Exception as exc:
             failures.append(f"{name}: {exc}")
             continue
         if lectures:
+            logger.info("Schedule parser '%s' produced %d lectures.", name, len(lectures))
             return name, parser, lectures
         failures.append(f"{name}: empty timetable")
 

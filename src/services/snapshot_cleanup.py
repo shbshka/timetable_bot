@@ -4,7 +4,9 @@ from pathlib import Path
 from typing import Iterable
 
 from config import MAX_SCHEDULE_SNAPSHOTS, SNAPSHOTS_DIR
-from src.utils.logger import logger
+from src.utils.logger import get_logger
+
+logger = get_logger("jobs")
 
 _SNAPSHOT_NAME_RE = re.compile(r"^(?P<sheet_id>.+)_(?P<timestamp>\d{8}T\d{6}_\d{6}Z)\.json$")
 

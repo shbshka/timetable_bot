@@ -5,9 +5,11 @@ from typing import Optional, Dict, List, Any, Iterator
 
 from src.parser.models import DaySchedule, Lecture
 from src.parser.academic_year import enrollment_year
-from src.utils.logger import logger
+from src.utils.logger import get_logger
 
 from config import DB_PATH, SUPPORTED_USER_LOCALES
+
+logger = get_logger("database")
 
 
 @contextmanager

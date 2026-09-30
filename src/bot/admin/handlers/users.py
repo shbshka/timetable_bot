@@ -11,7 +11,10 @@ from src.db.repository import (
 )
 from src.utils.messages import get_user_msg
 from src.parser.academic_year import enrollment_year
+from src.utils.logger import get_logger
 from config import STUDY_FORMS, YEARS
+
+logger = get_logger("admin")
 
 
 @admin_only
@@ -95,6 +98,7 @@ async def ban_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
     if set_user_banned(chat_id, True):
         message_key = "admin.user_banned"
+        logger.info(f"Admin {admin_chat_id} banned user {chat_id}.")
     else:
         message_key = "admin.user_already_banned"
 
@@ -118,6 +122,7 @@ async def unban_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     if set_user_banned(chat_id, False):
         message_key = "admin.user_unbanned"
+        logger.info(f"Admin {admin_chat_id} unbanned user {chat_id}.")
     else:
         message_key = "admin.user_not_banned"
     await update.effective_message.reply_text(

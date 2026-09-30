@@ -12,10 +12,12 @@ from src.db.repository import (
 )
 from src.parser.schedule_parser import refresh_schedule_cache_from_latest_snapshot, schedule_grid_hash
 from src.services.google_sheets import fetch_sheet_data_with_sa
-from src.utils.logger import logger
+from src.utils.logger import get_logger
 from src.utils.messages import get_user_msg
 from src.utils.spreadsheets_link_parser import extract_sheet_id
 from src.db.repository import get_pending_submission
+
+logger = get_logger("admin")
 
 
 async def _refresh_sheet_cache(sheet_id: str, fallback_level: str | None = None) -> bool:
@@ -185,6 +187,8 @@ async def attach_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if await _refresh_sheet_cache(sheet_id, fallback_level=group_info["study_form"]):
         set_group_spreadsheet(group_id=group_info["id"], sheet_id=sheet_id)
 
+        logger.info(f"Admin {admin_chat_id} attached sheet {sheet_id} to group {group_info['group_name']}.")
+
         await update.message.reply_text(
             get_user_msg(
                 admin_chat_id,
@@ -225,6 +229,7 @@ async def detach_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     removed = detach_group_spreadsheet(group_id=group_info["id"])
 
     if removed:
+        logger.info(f"Admin {admin_chat_id} detached sheet from group {group_info['group_name']}.")
         await update.message.reply_text(
             get_user_msg(admin_chat_id, "admin.sheet.detached", group_name=group_code),
             parse_mode="HTML"

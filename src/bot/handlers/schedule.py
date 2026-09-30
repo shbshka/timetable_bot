@@ -7,7 +7,9 @@ from src.db.repository import get_user_locale, get_user_schedule_context
 from src.parser.schedule_parser import get_cached_schedule
 from src.services.admin_notifier import forward_message_to_admin, notify_admin_of_error
 from src.utils.formatter import format_daily_schedule, format_weekly_schedule
-from src.utils.logger import logger
+from src.utils.logger import get_logger
+
+logger = get_logger("bot")
 from src.utils.messages import get_user_msg
 
 

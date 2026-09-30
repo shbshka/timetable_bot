@@ -7,7 +7,9 @@ from google.oauth2.service_account import Credentials
 from config import SERVICE_ACCOUNT_PATH, SNAPSHOTS_DIR
 from src.services.snapshot_cleanup import cleanup_snapshots_for_sheet
 
-from src.utils.logger import logger
+from src.utils.logger import get_logger
+
+logger = get_logger("google")
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
 

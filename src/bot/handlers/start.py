@@ -4,7 +4,9 @@ from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
 from src.bot.handlers.group import choose_form_command
 from src.bot.handlers.language import language_command
 from src.db.repository import get_user_schedule_context, register_user_if_not_exists
-from src.utils.logger import logger
+from src.utils.logger import get_logger
+
+logger = get_logger("bot")
 from src.utils.messages import get_user_msg
 
 

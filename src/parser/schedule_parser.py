@@ -16,7 +16,9 @@ from src.parser.interface import ParsedSchedule, ScheduleGrid
 from src.parser.models import Lecture
 from src.parser.registry import parse_with_first_successful_parser
 from src.services.google_sheets import fetch_sheet_data_with_sa
-from src.utils.logger import logger
+from src.utils.logger import get_logger
+
+logger = get_logger("parser")
 
 
 def _current_academic_year() -> int:
@@ -35,6 +37,7 @@ def refresh_schedule_cache_from_latest_snapshot(
     """Load and persist only the newest local snapshot for a spreadsheet."""
     snapshots = list(SNAPSHOTS_DIR.glob(f"{sheet_id}_*.json"))
     if not snapshots:
+        logger.warning("No schedule snapshots found for spreadsheet '%s'.", sheet_id)
         return False
 
     snapshot_path = max(snapshots, key=lambda path: path.name)
@@ -63,6 +66,7 @@ def refresh_schedule_cache_from_latest_snapshot(
             and cache_state["academic_year"] == academic_year
             and cache_state["lecture_count"] == len(lectures)
         ):
+            logger.debug("Schedule cache for spreadsheet '%s' is already current.", sheet_id)
             return False
 
         lecture_count = replace_schedule_for_sheet(
@@ -91,11 +95,14 @@ def get_cached_schedule(
     """Read schedule models from SQLite, hydrating from the newest snapshot on a cold cache."""
     cache_state = get_schedule_cache_state(sheet_id)
     if not cache_state or cache_state["academic_year"] != _current_academic_year():
+        logger.info("Refreshing cold or stale schedule cache for spreadsheet '%s'.", sheet_id)
         group = get_group_by_id(group_id)
         refresh_schedule_cache_from_latest_snapshot(
             sheet_id,
             fallback_level=group["study_form"] if group else None,
         )
+    else:
+        logger.debug("Using current schedule cache for spreadsheet '%s'.", sheet_id)
     return read_group_schedule(
         group_id=group_id,
         target_date=target_date or datetime.now(),

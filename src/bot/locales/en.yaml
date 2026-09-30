@@ -115,7 +115,7 @@ schedule:
     rejected: |
       ❌ The schedule link for <b>{group_name}</b> was rejected by the admin.
     invalid: |
-      ❌ The schedule link for <b>{group_name}</b> was rejected by the bot due to an invalid link.
+      ❌ The schedule link for <b>{group_name}</b> was rejected by the bot due to an invalid link or empty timetable.
 
   errors:
     notification_failed: |

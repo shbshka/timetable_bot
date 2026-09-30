@@ -3,7 +3,9 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from config import ADMIN_IDS
-from src.utils.logger import logger
+from src.utils.logger import get_logger
+
+logger = get_logger("admin")
 from src.utils.messages import get_user_msg
 
 

@@ -20,7 +20,9 @@ from src.bot.jobs.watcher import (
     refresh_schedules_on_startup,
 )
 from src.db.database import init_db, populate_db
-from src.utils.logger import logger
+from src.utils.logger import get_logger
+
+logger = get_logger("app")
 
 
 def create_bot_app() -> Application:
