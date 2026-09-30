@@ -10,7 +10,7 @@ from src.db.repository import (
     update_spreadsheet_hash,
 )
 from src.parser.schedule_parser import refresh_schedule_cache_from_latest_snapshot, schedule_grid_hash
-from src.parser.registry import get_parser
+from src.parser.registry import parse_with_first_successful_parser
 from src.utils.logger import logger
 from src.utils.messages import get_user_msg
 
@@ -39,10 +39,8 @@ async def refresh_schedules_on_startup() -> None:
                 logger.error(f"Startup fetch failed for spreadsheet '{sheet_id}'.")
                 continue
 
-            parsed_count = len(get_parser().parse_all(grid))
-            if parsed_count == 0:
-                logger.error(f"Startup fetch for spreadsheet '{sheet_id}' produced no schedule entries.")
-                continue
+            parser_name, _, lectures = parse_with_first_successful_parser(grid)
+            parsed_count = len(lectures)
 
             refresh_schedule_cache_from_latest_snapshot(sheet_id)
             cache_state = get_schedule_cache_state(sheet_id)
@@ -59,7 +57,10 @@ async def refresh_schedules_on_startup() -> None:
 
             for link in links:
                 update_spreadsheet_hash(link["spreadsheet_db_id"], cache_state["content_hash"])
-            logger.info(f"Startup schedule cache verified for '{sheet_id}': {parsed_count} entries.")
+            logger.info(
+                f"Startup schedule cache verified for '{sheet_id}': "
+                f"{parsed_count} entries using parser '{parser_name}'."
+            )
         except Exception as e:
             logger.error(f"Startup schedule refresh failed for '{sheet_id}': {e}", exc_info=True)
 
@@ -88,10 +89,10 @@ async def check_sheet_updates_job(context: ContextTypes.DEFAULT_TYPE) -> None:
                     continue
 
                 for chat_id in get_group_subscribers(link["group_id"]):
-                    await context.bot.send_message(
-                        chat_id=chat_id,
-                        text=get_user_msg(chat_id, "schedule.updated", group_name=link["group_name"], date_str=datetime.now().strftime("%d.%m.%Y")),
-                        parse_mode="Markdown",
-                    )
+                        await context.bot.send_message(
+                            chat_id=chat_id,
+                            text=get_user_msg(chat_id, "schedule.updated", group_name=link["group_name"], date_str=datetime.now().strftime("%d.%m.%Y")),
+                            parse_mode="HTML",
+                        )
         except Exception as e:
             logger.error(f"Schedule refresh failed for spreadsheet '{sheet_id}': {e}", exc_info=True)

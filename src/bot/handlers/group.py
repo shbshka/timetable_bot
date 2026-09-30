@@ -39,7 +39,7 @@ async def handle_form_selection(update: Update, context: ContextTypes.DEFAULT_TY
     await query.edit_message_text(
         get_user_msg(update.effective_chat.id, "group.choose_form.step_2", selected_form=selected_form),
         reply_markup=reply_markup,
-        parse_mode="Markdown"
+        parse_mode="HTML"
     )
 
 
@@ -65,7 +65,7 @@ async def handle_year_selection(update: Update, context: ContextTypes.DEFAULT_TY
     if not group_info:
         await query.edit_message_text(
             get_user_msg(chat_id, "group.errors.not_found"),
-            parse_mode="Markdown"
+            parse_mode="HTML"
         )
         return
 
@@ -78,7 +78,7 @@ async def handle_year_selection(update: Update, context: ContextTypes.DEFAULT_TY
 
     await query.edit_message_text(
         get_user_msg(chat_id, "group.success", study_form=study_form, year_num=year_num, enrollment_year=enrollment_year, group_name=group_name),
-        parse_mode="Markdown"
+        parse_mode="HTML"
     )
 
 

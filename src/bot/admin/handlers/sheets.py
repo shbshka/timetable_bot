@@ -64,13 +64,13 @@ async def handle_sheet_approval_callback(update: Update, context: ContextTypes.D
                 "admin.sheet.approved",
                 sheet_id=sheet_id,
                 ),
-            parse_mode="Markdown"
+            parse_mode="HTML"
         )
 
         await context.bot.send_message(
             chat_id=user_chat_id,
             text=get_user_msg(user_chat_id, "schedule.submit_link.accepted", group_name=group_name),
-            parse_mode="Markdown"
+            parse_mode="HTML"
     )
     else:
         await query.edit_message_text(
@@ -79,13 +79,13 @@ async def handle_sheet_approval_callback(update: Update, context: ContextTypes.D
                 admin_chat_id,
                 "admin.sheet.invalid"
             ),
-            parse_mode="Markdown"
+            parse_mode="HTML"
         )
 
         await context.bot.send_message(
             chat_id=user_chat_id,
             text=get_user_msg(user_chat_id, "schedule.submit_link.invalid", group_name=group_name),
-            parse_mode="Markdown"
+            parse_mode="HTML"
             )
 
 
@@ -126,13 +126,13 @@ async def handle_sheet_rejection_callback(update: Update, context: ContextTypes.
             admin_chat_id, 
             "admin.sheet.rejected", 
             sheet_id=sheet_id),
-        parse_mode="Markdown"
+        parse_mode="HTML"
     )
 
     await context.bot.send_message(
         chat_id=user_chat_id,
         text=get_user_msg(user_chat_id, "schedule.submit_link.rejected", group_name=group_name),
-        parse_mode="Markdown"
+        parse_mode="HTML"
     )
 
     try:
@@ -151,7 +151,7 @@ async def attach_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if not context.args or len(context.args) < 2:
         await update.message.reply_text(
             get_user_msg(admin_chat_id, "admin.usage.attach"),
-            parse_mode="Markdown"
+            parse_mode="HTML"
         )
         return
 
@@ -166,7 +166,7 @@ async def attach_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if not group_info:
         await update.message.reply_text(
             get_user_msg(admin_chat_id, "admin.sheet.errors.group_not_found", group_name=group_code),
-            parse_mode="Markdown",
+            parse_mode="HTML",
         )
         return
 
@@ -180,12 +180,12 @@ async def attach_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 group_name=group_info["group_name"],
                 sheet_id=sheet_id,
             ),
-            parse_mode="Markdown"
+            parse_mode="HTML"
         )
     else:
         await update.message.reply_text(
             get_user_msg(admin_chat_id, "admin.sheet.invalid"),
-            parse_mode="Markdown"
+            parse_mode="HTML"
         )
 
 
@@ -197,7 +197,7 @@ async def detach_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     """
     admin_chat_id = update.effective_user.id
     if not context.args:
-        await update.message.reply_text(get_user_msg(admin_chat_id, "admin.usage.detach"), parse_mode="Markdown")
+        await update.message.reply_text(get_user_msg(admin_chat_id, "admin.usage.detach"), parse_mode="HTML")
         return
 
     group_code = context.args[0].upper()
@@ -206,7 +206,7 @@ async def detach_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if not group_info:
         await update.message.reply_text(
             get_user_msg(admin_chat_id, "admin.sheet.errors.group_not_found", group_name=group_code),
-            parse_mode="Markdown",
+            parse_mode="HTML",
         )
         return
 
@@ -215,10 +215,10 @@ async def detach_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if removed:
         await update.message.reply_text(
             get_user_msg(admin_chat_id, "admin.sheet.detached", group_name=group_code),
-            parse_mode="Markdown"
+            parse_mode="HTML"
         )
     else:
         await update.message.reply_text(
             get_user_msg(admin_chat_id, "admin.sheet.not_attached", group_name=group_code),
-            parse_mode="Markdown",
+            parse_mode="HTML",
         )

@@ -1,8 +1,8 @@
 start:
   welcome_back: |
-    👋 Welcome back, *{first_name}*!
+    👋 Welcome back, <b>{first_name}</b>!
 
-    📌 *Current group:* `{group_name}`
+    📌 <b>Current group:</b> <code>{group_name}</code>
 
     Quick commands:
     • /today — Today's schedule
@@ -12,11 +12,11 @@ start:
     • /help — Help & settings
 
   welcome_new: |
-    👋 Hi, *{first_name}*!
+    👋 Hi, <b>{first_name}</b>!
 
-    This is *Raspisaniye Bot*.
+    This is <b>Raspisaniye Bot</b>.
     The bot will display your current schedule and notify you about changes in Google Sheets.
-    Vibe-coded by *@shoobec* because I was fed up with loading Google Sheets every single time.
+    Vibe-coded by <b>@shoobec</b> because I was fed up with loading Google Sheets every single time.
 
     Select your study group:
 
@@ -47,22 +47,22 @@ group:
   choose_form:
     step_1: "Step 1/2: Select form of study:"
     step_2: |
-      Form: *{selected_form}*
+      Form: <b>{selected_form}</b>
 
       Step 2/2: Select study year:
   errors:
     not_chosen: "⚠️ First select a group via /group"
     not_found: |
-      ❌ *Group not found*
+      ❌ <b>Group not found</b>
 
-      No group found for *{study_form}* ({year_num} year, enrollment year {enrollment_year}).
+      No group found for <b>{study_form}</b> ({year_num} year, enrollment year {enrollment_year}).
       Please contact @shoobec, as something probably went down again.
   success: |
-    ✅ *Group successfully selected!*
+    ✅ <b>Group successfully selected!</b>
 
-    • *Form of study:* {study_form}
-    • *Year:* Year {year_num} ({enrollment_year})
-    • *Group code:* `{group_name}`
+    • <b>Form of study:</b> {study_form}
+    • <b>Year:</b> Year {year_num} ({enrollment_year})
+    • <b>Group code:</b> <code>{group_name}</code>
 
     Send /today or /week to view the schedule.
 
@@ -90,11 +90,11 @@ schedule:
     december: "December"
   time_tbd: "Time TBD"
   daily: |
-    📅 *Schedule for {group_name}*
-    📆 _{date_str}_
+    📅 <b>Schedule for {group_name}</b>
+    📆 <i>{date_str}</i>
 
   weekly: |
-    📅 *Weekly schedule for {group_name}*
+    📅 <b>Weekly schedule for {group_name}</b>
     ─────────────────────────
     {week_schedule}
 
@@ -102,26 +102,26 @@ schedule:
     No classes 🌚
 
   updated: |
-    🔔 *Schedule updated for {group_name}*
-    📅 _{date_str}_
+    🔔 <b>Schedule updated for {group_name}</b>
+    📅 <i>{date_str}</i>
     
     /today — view today's schedule
 
   submit_link:
     success: |
-      ✅ Thank you! The schedule link for *{group_name}* was successfully sent to the admin.
+      ✅ Thank you! The schedule link for <b>{group_name}</b> was successfully sent to the admin.
     accepted: |
-      ✅ The schedule link for *{group_name}* was approved by the admin.
+      ✅ The schedule link for <b>{group_name}</b> was approved by the admin.
     rejected: |
-      ❌ The schedule link for *{group_name}* was rejected by the admin.
+      ❌ The schedule link for <b>{group_name}</b> was rejected by the admin.
     invalid: |
-      ❌ The schedule link for *{group_name}* was rejected by the bot due to an invalid link.
+      ❌ The schedule link for <b>{group_name}</b> was rejected by the bot due to an invalid link.
 
   errors:
     notification_failed: |
       ⚠️ Failed to send notification to the admin. Please text @shoobec manually.
     not_found: |
-      ❌ No schedule found in the database for *{group_name}*.
+      ❌ No schedule found in the database for <b>{group_name}</b>.
       Got a link to it? Send it as a reply and wait a bit
       (it takes a while, I confirm them manually).
 
@@ -138,54 +138,54 @@ admin:
     callback: "❌ Uh-oh, you're not allowed here"
     command: "⛔ Uh-oh, you aren't allowed to do this"
   help: |
-    *Admin commands*
-    /attach <group> <link_or_ID> — attach schedule
-    /detach <group> — remove schedule link
-    /users <year_1-5> <form_HR_HRO_LR> — group users
-    /ban <chat_id> — block access to bot
-    /unban <chat_id> — restore access
+    <b>Admin commands</b>
+    /attach &lt;group&gt; &lt;link_or_ID&gt; — attach schedule
+    /detach &lt;group&gt; — remove schedule link
+    /users &lt;year_1-5&gt; &lt;form_HR_HRO_LR&gt; — group users
+    /ban &lt;chat_id&gt; — block access to bot
+    /unban &lt;chat_id&gt; — restore access
   usage:
-    users: "Usage: `/users <year 1-5> <HR|HRO|LR>`"
-    attach: "⚠ Usage: `/attach <group> <link_or_ID>`"
-    detach: "⚠️ Usage: `/detach <group>`"
-    ban: "Usage: `/ban <chat_id>` or `/unban <chat_id>`"
+    users: "Usage: <code>/users &lt;year 1-5&gt; &lt;HR|HRO|LR&gt;</code>"
+    attach: "⚠ Usage: <code>/attach &lt;group&gt; &lt;link_or_ID&gt;</code>"
+    detach: "⚠️ Usage: <code>/detach &lt;group&gt;</code>"
+    ban: "Usage: <code>/ban &lt;chat_id&gt;</code> or <code>/unban &lt;chat_id&gt;</code>"
   user: ""
 
-  users_usage: "Usage: `/users <year 1-5> <HR|HRO|LR>`"
+  users_usage: "Usage: <code>/users &lt;year 1-5&gt; &lt;HR|HRO|LR&gt;</code>"
   group_not_found: "Group for year {course_year}, study form {study_form}, and enrollment year {enrollment_year} was not found."
-  users_empty: "There are no registered users in group *{group_name}* yet."
-  users_header: "*{group_name}* — users: {count}"
-  banned_status: " — *banned*"
-  ban_usage: "Usage: `/ban <chat_id>` or `/unban <chat_id>`"
-  user_banned: "Access for `{chat_id}` has been blocked."
-  user_already_banned: "User `{chat_id}` is already blocked."
-  user_unbanned: "Access for `{chat_id}` has been restored."
-  user_not_banned: "User `{chat_id}` is not blocked or not found."
+  users_empty: "There are no registered users in group <b>{group_name}</b> yet."
+  users_header: "<b>{group_name}</b> — users: {count}"
+  banned_status: " — <b>banned</b>"
+  ban_usage: "Usage: <code>/ban &lt;chat_id&gt;</code> or <code>/unban &lt;chat_id&gt;</code>"
+  user_banned: "Access for <code>{chat_id}</code> has been blocked."
+  user_already_banned: "User <code>{chat_id}</code> is already blocked."
+  user_unbanned: "Access for <code>{chat_id}</code> has been restored."
+  user_not_banned: "User <code>{chat_id}</code> is not blocked or not found."
   banned_access: "⛔ Access to the bot is blocked."
   sheet:
     attached: |
-      ✅ *Schedule updated*
-      • *Group:* `{group_name}`
-      • *Sheet ID:* `{sheet_id}`
-      • *Cache:* updated
+      ✅ <b>Schedule updated</b>
+      • <b>Group:</b> <code>{group_name}</code>
+      • <b>Sheet ID:</b> <code>{sheet_id}</code>
+      • <b>Cache:</b> updated
       Old group links removed.
     approved: |
-      ✅ *Link approved and attached*
-      • *Sheet ID:* `{sheet_id}`
-      • *Cache:* updated
+      ✅ <b>Link approved and attached</b>
+      • <b>Sheet ID:</b> <code>{sheet_id}</code>
+      • <b>Cache:</b> updated
     rejected: |
-      ❌ *Link rejected*
-      • *Sheet ID:* `{sheet_id}`
+      ❌ <b>Link rejected</b>
+      • <b>Sheet ID:</b> <code>{sheet_id}</code>
     invalid: "❌ Invalid Google Sheets link or ID."
-    detached: "🗑️ Schedule link removed for group `{group_name}`."
-    not_attached: "ℹ️ No link was attached for group `{group_name}`."
+    detached: "🗑️ Schedule link removed for group <code>{group_name}</code>."
+    not_attached: "ℹ️ No link was attached for group <code>{group_name}</code>."
     errors:
-      group_not_found: "❌ Group `{group_name}` not found."
+      group_not_found: "❌ Group <code>{group_name}</code> not found."
       submission_not_found: "❌ Link attachment request not found."
   forwards:
     link:
       new_submission: |
-        📌 *New schedule link*
+        📌 <b>New schedule link</b>
 
         • Sender: {user_name} (@{user_username}, ID: {user_chat_id})
         • Group: {group_name}
@@ -194,7 +194,7 @@ admin:
       approve_button: ✅ Attach link to group {group_name}
       reject_button: ❌ Reject link for group {group_name}
       approve_sheet: |
-        ✅ *Schedule link approved!*
+        ✅ <b>Schedule link approved!</b>
 
         • Group: {group_name}
         • Sheet ID: {sheet_id}

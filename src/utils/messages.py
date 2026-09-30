@@ -1,5 +1,6 @@
 # src/utils/messages.py
 from functools import lru_cache
+from html import escape
 from pathlib import Path
 import yaml
 
@@ -41,7 +42,13 @@ def get_msg(key: str, locale: str = DEFAULT_LOCALE, **kwargs) -> str:
     if val is None:
         return f"[{key}]"
 
-    return str(val).format(**kwargs) if kwargs else str(val)
+    if not kwargs:
+        return str(val)
+    safe_kwargs = {
+        key: value if key == "week_schedule" else escape(str(value))
+        for key, value in kwargs.items()
+    }
+    return str(val).format(**safe_kwargs)
 
 
 def get_user_msg(user_id: int, key: str, **kwargs) -> str:

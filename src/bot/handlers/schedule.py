@@ -56,15 +56,15 @@ async def handle_incoming_link_submission(update: Update, context: ContextTypes.
         context.user_data.pop("awaiting_sheet_link", None)
 
         if success:
-            await update.message.reply_text(
-                get_user_msg(chat_id, "schedule.submit_link.success", group_name=group_name),
-                parse_mode="Markdown"
-            )
+                await update.message.reply_text(
+                    get_user_msg(chat_id, "schedule.submit_link.success", group_name=group_name),
+                    parse_mode="HTML"
+                )
         else:
-            await update.message.reply_text(
-                get_user_msg(chat_id, "schedule.errors.notification_failed"),
-                parse_mode="Markdown"
-            )
+                await update.message.reply_text(
+                    get_user_msg(chat_id, "schedule.errors.notification_failed"),
+                    parse_mode="HTML"
+                )
 
 
 async def render_daily_schedule(update: Update, context: ContextTypes.DEFAULT_TYPE, target_date: datetime) -> None:
@@ -84,15 +84,15 @@ async def render_daily_schedule(update: Update, context: ContextTypes.DEFAULT_TY
             prompt_text = get_user_msg(chat_id, "schedule.errors.not_found", group_name=group_name)
 
             if update.callback_query:
-                await update.callback_query.edit_message_text(prompt_text, parse_mode="Markdown")
+                    await update.callback_query.edit_message_text(prompt_text, parse_mode="HTML")
             elif update.effective_message:
-                await update.effective_message.reply_text(prompt_text, parse_mode="Markdown")
+                    await update.effective_message.reply_text(prompt_text, parse_mode="HTML")
             return
 
         if update.callback_query:
-            await update.callback_query.edit_message_text(error_msg, parse_mode="Markdown")
+                await update.callback_query.edit_message_text(error_msg, parse_mode="HTML")
         elif update.effective_message:
-            await update.effective_message.reply_text(error_msg, parse_mode="Markdown")
+                await update.effective_message.reply_text(error_msg, parse_mode="HTML")
         return
 
     group_name = user_context["group_name"]
@@ -135,16 +135,16 @@ async def render_daily_schedule(update: Update, context: ContextTypes.DEFAULT_TY
 
         if update.callback_query:
             try:
-                await update.callback_query.edit_message_text(
-                    response_text, reply_markup=reply_markup, parse_mode="Markdown"
-                )
+                    await update.callback_query.edit_message_text(
+                        response_text, reply_markup=reply_markup, parse_mode="HTML"
+                    )
             except BadRequest as e:
                 if "Message is not modified" not in str(e):
                     raise e
         elif update.effective_message:
-            await update.effective_message.reply_text(
-                response_text, reply_markup=reply_markup, parse_mode="Markdown"
-            )
+                await update.effective_message.reply_text(
+                    response_text, reply_markup=reply_markup, parse_mode="HTML"
+                )
 
     except Exception as e:
         error_msg = f"Error fetching schedule for date {target_date} in chat_id {chat_id}: {e}"
@@ -174,9 +174,9 @@ async def week_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     if error_msg:
         if update.callback_query:
-            await update.callback_query.edit_message_text(error_msg, parse_mode="Markdown")
+            await update.callback_query.edit_message_text(error_msg, parse_mode="HTML")
         elif update.effective_message:
-            await update.effective_message.reply_text(error_msg, parse_mode="Markdown")
+            await update.effective_message.reply_text(error_msg, parse_mode="HTML")
         return
 
     group_name = user_context["group_name"]
@@ -208,14 +208,14 @@ async def week_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         if update.callback_query:
             try:
                 await update.callback_query.edit_message_text(
-                    response_text, reply_markup=reply_markup, parse_mode="Markdown"
+                    response_text, reply_markup=reply_markup, parse_mode="HTML"
                 )
             except BadRequest as e:
                 if "Message is not modified" not in str(e):
                     raise e
         elif update.effective_message:
             await update.effective_message.reply_text(
-                response_text, reply_markup=reply_markup, parse_mode="Markdown"
+                response_text, reply_markup=reply_markup, parse_mode="HTML"
             )
 
     except Exception as e:

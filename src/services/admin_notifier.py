@@ -62,7 +62,7 @@ async def forward_message_to_admin(
             chat_id=ADMIN_ID,
             text=message_text,
             reply_markup=reply_markup,
-            parse_mode="Markdown"
+            parse_mode="HTML"
         )
         return True
     except Exception as e:

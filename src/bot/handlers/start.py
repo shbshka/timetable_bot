@@ -51,9 +51,9 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     if update.message:
-        await update.message.reply_text(welcome_text, reply_markup=reply_markup, parse_mode="Markdown")
+            await update.message.reply_text(welcome_text, reply_markup=reply_markup, parse_mode="HTML")
     elif update.callback_query:
-        await update.callback_query.edit_message_text(welcome_text, reply_markup=reply_markup, parse_mode="Markdown")
+            await update.callback_query.edit_message_text(welcome_text, reply_markup=reply_markup, parse_mode="HTML")
 
 
 async def handle_start_button_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

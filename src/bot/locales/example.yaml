@@ -1,7 +1,7 @@
 # ====================================================================================
 # Localization Structure & Variable Guide (example.yaml)
 # Format: YAML
-# Parsing: Markdown
+# Parsing: HTML
 # Variables: {variable_name}, used for dynamic content insertion, inserted at runtime.
 # ====================================================================================
 

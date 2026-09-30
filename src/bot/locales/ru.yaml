@@ -1,8 +1,8 @@
 start:
   welcome_back: |
-    👋 С возвращением, *{first_name}*!
+    👋 С возвращением, <b>{first_name}</b>!
 
-    📌 *Текущая группа:* `{group_name}`
+    📌 <b>Текущая группа:</b> <code>{group_name}</code>
 
     Быстрые команды:
     • /today — Расписание на сегодня
@@ -12,11 +12,11 @@ start:
     • /help — Помощь и настройки
 
   welcome_new: |
-    👋 Привет, *{first_name}*!
+    👋 Привет, <b>{first_name}</b>!
 
-    Это *Raspisaniye Bot*.
+    Это <b>Raspisaniye Bot</b>.
     Бот будет отображать текущее расписание и уведомлять об изменениях в Google Sheets.
-    Навайбкодила я *@shoobec* потому что я манала каждый раз гугл щит грузить
+    Навайбкодила я <b>@shoobec</b> потому что я манала каждый раз гугл щит грузить
 
     Выбери свою учебную группу:
 
@@ -47,22 +47,22 @@ group:
   choose_form:
     step_1: "Шаг 1/2: Выбери форму обучения:"
     step_2: |
-      Форма: *{selected_form}*
+      Форма: <b>{selected_form}</b>
 
       Шаг 2/2: Выбери курс:
   errors:
     not_chosen: "⚠️ Сначала выбери группу через /group"
     not_found: |
-      ❌ *Группа не найдена*
+      ❌ <b>Группа не найдена</b>
 
-      Не найдена группа для *{study_form}* ({year_num} курс, год поступления {enrollment_year}).
+      Не найдена группа для <b>{study_form}</b> ({year_num} курс, год поступления {enrollment_year}).
       Пожалуйста, свяжитесь с @shoobec, а то че-то опять прилегло, наверное.
   success: |
-    ✅ *Группа успешно выбрана!*
+    ✅ <b>Группа успешно выбрана!</b>
 
-    • *Форма обучения:* {study_form}
-    • *Курс:* {year_num} курс ({enrollment_year})
-    • *Код группы:* `{group_name}`
+    • <b>Форма обучения:</b> {study_form}
+    • <b>Курс:</b> {year_num} курс ({enrollment_year})
+    • <b>Код группы:</b> <code>{group_name}</code>
 
     Отправь /today или /week для просмотра расписания.
 
@@ -90,11 +90,11 @@ schedule:
     december: "декабря"
   time_tbd: "Время уточняется"
   daily: |
-    📅 *Расписание для {group_name}*
-    📆 _{date_str}_
+    📅 <b>Расписание для {group_name}</b>
+    📆 <i>{date_str}</i>
 
   weekly: |
-    📅 *Расписание на неделю для {group_name}*
+    📅 <b>Расписание на неделю для {group_name}</b>
     ─────────────────────────
     {week_schedule}
 
@@ -102,26 +102,26 @@ schedule:
     Пар нет 🌚
 
   updated: |
-    🔔 *Расписание обновлено для {group_name}*
-    📅 _{date_str}_
+    🔔 <b>Расписание обновлено для {group_name}</b>
+    📅 <i>{date_str}</i>
     
     /today — посмотреть расписание на сегодня
 
   submit_link:
     success: |
-      ✅ Спасибо! Ссылка на расписание для *{group_name}* успешно отправлена админке.
+      ✅ Спасибо! Ссылка на расписание для <b>{group_name}</b> успешно отправлена админке.
     accepted: |
-      ✅ Ссылка на расписание для *{group_name}* одобрена админкой.
+      ✅ Ссылка на расписание для <b>{group_name}</b> одобрена админкой.
     rejected: |
-      ❌ Ссылка на расписание для *{group_name}* отклонена админкой.
+      ❌ Ссылка на расписание для <b>{group_name}</b> отклонена админкой.
     invalid: |
-      ❌ Ссылка на расписание для *{group_name}* отклонена ботом по причине: некорректная ссылка.
+      ❌ Ссылка на расписание для <b>{group_name}</b> отклонена ботом по причине: некорректная ссылка.
 
   errors:
     notification_failed: |
       ⚠️ Не удалось отправить уведомление админке. Напишите ручками @shoobec
     not_found: |
-      ❌ В базе не найдено расписание для *{group_name}*.
+      ❌ В базе не найдено расписание для <b>{group_name}</b>.
       Есть ссылка на него? Отправьте ее ответным сообщением и подождите
       (долго, я руками подтверждаю).
 
@@ -138,54 +138,54 @@ admin:
     callback: "❌ Ай-яй, сюда низя"
     command: "⛔ Ай-яй, тебе это делать низя"
   help: |
-    *Команды администратора*
-    /attach <группа> <ссылка_или_ID> — прикрепить расписание
-    /detach <группа> — удалить ссылку расписания
-    /users <курс_1-5> <форма_HR_HRO_LR> — пользователи группы
-    /ban <chat_id> — запретить доступ к боту
-    /unban <chat_id> — восстановить доступ
+    <b>Команды администратора</b>
+    /attach &lt;группа&gt; &lt;ссылка_или_ID&gt; — прикрепить расписание
+    /detach &lt;группа&gt; — удалить ссылку расписания
+    /users &lt;курс_1-5&gt; &lt;форма_HR_HRO_LR&gt; — пользователи группы
+    /ban &lt;chat_id&gt; — запретить доступ к боту
+    /unban &lt;chat_id&gt; — восстановить доступ
   usage:
-    users: "Использование: `/users <курс 1-5> <HR|HRO|LR>`"
-    attach: "⚠️️ Использование: `/attach <группа> <ссылка_или_ID>`"
-    detach: "⚠️ Использование: `/detach <группа>`"
-    ban: "Использование: `/ban <chat_id>` или `/unban <chat_id>`"
+    users: "Использование: <code>/users &lt;курс 1-5&gt; &lt;HR|HRO|LR&gt;</code>"
+    attach: "⚠️️ Использование: <code>/attach &lt;группа&gt; &lt;ссылка_или_ID&gt;</code>"
+    detach: "⚠️ Использование: <code>/detach &lt;группа&gt;</code>"
+    ban: "Использование: <code>/ban &lt;chat_id&gt;</code> или <code>/unban &lt;chat_id&gt;</code>"
   user: ""
 
-  users_usage: "Использование: `/users <курс 1-5> <HR|HRO|LR>`"
+  users_usage: "Использование: <code>/users &lt;курс 1-5&gt; &lt;HR|HRO|LR&gt;</code>"
   group_not_found: "Группа для курса {course_year}, формы {study_form} и года поступления {enrollment_year} не найдена."
-  users_empty: "В группе *{group_name}* пока нет зарегистрированных пользователей."
-  users_header: "*{group_name}* — пользователей: {count}"
-  banned_status: " — *заблокирован*"
-  ban_usage: "Использование: `/ban <chat_id>` или `/unban <chat_id>`"
-  user_banned: "Доступ для `{chat_id}` заблокирован."
-  user_already_banned: "Пользователь `{chat_id}` уже заблокирован."
-  user_unbanned: "Доступ для `{chat_id}` восстановлен."
-  user_not_banned: "Пользователь `{chat_id}` не заблокирован или не найден."
+  users_empty: "В группе <b>{group_name}</b> пока нет зарегистрированных пользователей."
+  users_header: "<b>{group_name}</b> — пользователей: {count}"
+  banned_status: " — <b>заблокирован</b>"
+  ban_usage: "Использование: <code>/ban &lt;chat_id&gt;</code> или <code>/unban &lt;chat_id&gt;</code>"
+  user_banned: "Доступ для <code>{chat_id}</code> заблокирован."
+  user_already_banned: "Пользователь <code>{chat_id}</code> уже заблокирован."
+  user_unbanned: "Доступ для <code>{chat_id}</code> восстановлен."
+  user_not_banned: "Пользователь <code>{chat_id}</code> не заблокирован или не найден."
   banned_access: "⛔ Доступ к боту запрещён."
   sheet:
     attached: |
-      ✅ *Расписание обновлено*
-      • *Группа:* `{group_name}`
-      • *ID таблицы:* `{sheet_id}`
-      • *Кэш:* обновлен
+      ✅ <b>Расписание обновлено</b>
+      • <b>Группа:</b> <code>{group_name}</code>
+      • <b>ID таблицы:</b> <code>{sheet_id}</code>
+      • <b>Кэш:</b> обновлен
       Старые ссылки группы удалены.
     approved: |
-      ✅ *Ссылка одобрена и прикреплена*
-      • *ID таблицы:* `{sheet_id}`
-      • *Кэш:* обновлен
+      ✅ <b>Ссылка одобрена и прикреплена</b>
+      • <b>ID таблицы:</b> <code>{sheet_id}</code>
+      • <b>Кэш:</b> обновлен
     rejected: |
-      ❌ *Ссылка отклонена*
-      • *ID таблицы:* `{sheet_id}`
+      ❌ <b>Ссылка отклонена</b>
+      • <b>ID таблицы:</b> <code>{sheet_id}</code>
     invalid: "❌ Некорректная ссылка или ID Google Sheets."
-    detached: "🗑️ Ссылка на расписание удалена для группы `{group_name}`."
-    not_attached: "ℹ️ Для группы `{group_name}` ссылка не была прикреплена."
+    detached: "🗑️ Ссылка на расписание удалена для группы <code>{group_name}</code>."
+    not_attached: "ℹ️ Для группы <code>{group_name}</code> ссылка не была прикреплена."
     errors:
-      group_not_found: "❌ Группа `{group_name}` не найдена."
+      group_not_found: "❌ Группа <code>{group_name}</code> не найдена."
       submission_not_found: "❌ Заявка на прикрепление ссылки не найдена."
   forwards:
     link:
       new_submission: |
-        📌 *Новая ссылка на расписание*
+        📌 <b>Новая ссылка на расписание</b>
 
         • Отправитель: {user_name} (@{user_username}, ID: {user_chat_id})
         • Группа: {group_name}
@@ -194,7 +194,7 @@ admin:
       approve_button: ✅ Прикрепить ссылку к группе {group_name}
       reject_button: ❌ Отклонить ссылку для группы {group_name}
       approve_sheet: |
-        ✅ *Ссылка на расписание одобрена!*
+        ✅ <b>Ссылка на расписание одобрена!</b>
 
         • Группа: {group_name}
         • Sheet ID: {sheet_id}
