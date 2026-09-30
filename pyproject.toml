@@ -37,6 +37,8 @@ src = ["bot/locales/*.yaml"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
+pythonpath = ["."]
+addopts = "-ra"
 
 [tool.ruff]
 target-version = "py310"

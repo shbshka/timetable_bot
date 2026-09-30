@@ -1,0 +1,27 @@
+services:
+  timetable-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    init: true
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-prod}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      ADMIN_ID: ${ADMIN_ID}
+      SERVICE_ACCOUNT_BASE64: ${SERVICE_ACCOUNT_BASE64}
+      SPREADSHEET_ID: ${SPREADSHEET_ID:-}
+      DATABASE_PATH: /app/data/timetable.db
+      SCHEDULE_SNAPSHOTS_DIR: /app/data/schedule_snapshots
+      MAX_SCHEDULE_SNAPSHOTS: ${MAX_SCHEDULE_SNAPSHOTS:-25}
+      SNAPSHOT_CLEANUP_INTERVAL_SECONDS: ${SNAPSHOT_CLEANUP_INTERVAL_SECONDS:-86400}
+      CHECK_INTERVAL_SECONDS: ${CHECK_INTERVAL_SECONDS:-43200}
+      SCHEDULE_PARSER: ${SCHEDULE_PARSER:-awful_uni_grid}
+    volumes:
+      - timetable_data:/app/data
+      - timetable_logs:/app/logs
+
+volumes:
+  timetable_data:
+  timetable_logs:

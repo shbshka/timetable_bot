@@ -29,6 +29,19 @@ Telegram bot for viewing group timetables, managing schedule links, and notifyin
 
 The bot initializes SQLite, fetches each active spreadsheet at startup, verifies that parsed rows were cached, then starts polling. The configured watcher checks for later changes and the snapshot cleanup job enforces retention. The JobQueue support is included through the `python-telegram-bot[job-queue]` dependency.
 
+## Container Deployment
+
+The worker is packaged by [`Dockerfile`](Dockerfile) and can be run locally with the Compose manifest:
+
+```powershell
+docker compose build
+docker compose up -d
+```
+
+`docker-compose.yml` runs the bot without HTTP ingress, passes credentials through environment variables, and stores SQLite data, snapshots, and logs in named volumes. Do not put production secrets in the Compose file or image; provide `TELEGRAM_BOT_TOKEN`, `ADMIN_ID`, and `SERVICE_ACCOUNT_BASE64` through the deployment secret store.
+
+For Azure Container Apps, push the image to Azure Container Registry and create the worker without ingress, or use the Compose manifest with the Azure Container Apps Compose command supported by your Azure CLI extension. Mount Azure Files at `/app/data` and `/app/logs` when persistence across container revisions is required; otherwise SQLite, snapshots, and file logs are ephemeral. Container console logs remain available through ACA diagnostics.
+
 ## Configuration
 
 All settings are read from environment variables or `.env`. Relative filesystem paths are resolved from the project root.
@@ -86,3 +99,5 @@ To add another layout, implement `parse_all(grid)` and `parse(grid, target_date=
 ## Development
 
 Install the optional tools with `python -m pip install -e ".[dev]"`. Run tests with `python -m pytest`; lint with `python -m ruff check .`.
+
+Tests live under `tests/` and mirror the production layout: parser, database, service, and utility tests are separated into matching directories. Test names describe observable behavior, and each test follows Arrange, Act, Assert phases.
