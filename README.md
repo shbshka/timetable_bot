@@ -18,9 +18,9 @@ Telegram bot for viewing group timetables, managing schedule links, and notifyin
 	python -m pip install -e ".[dev]"
 	```
 
-3. Copy `.env.example` to `.env` and set `TELEGRAM_BOT_TOKEN`, `ADMIN_ID`, and `SERVICE_ACCOUNT_PATH`. Keep `.env` and the service-account key out of version control.
+3. Copy `.env.example` to `.env` and set `TELEGRAM_BOT_TOKEN` and `ADMIN_ID`. Azure deployments should set `SERVICE_ACCOUNT_BASE64`; local development automatically uses `credentials.json`. Keep `.env` and service-account data out of version control.
 4. Set `ADMIN_ID` to the Telegram numeric user ID allowed to use admin commands or a list of Telegram numeric user IDs separated with a comma.
-5. Place the service-account JSON key at the configured path and share each timetable spreadsheet with the service account's email.
+5. For local development, place the service-account JSON key at `credentials.json` in the project root. For Azure, set `SERVICE_ACCOUNT_BASE64` to the base64-encoded JSON. Share each timetable spreadsheet with the service account's email.
 6. Start the bot from the project root:
 
 	```powershell
@@ -37,14 +37,14 @@ All settings are read from environment variables or `.env`. Relative filesystem 
 | --- | --- | --- |
 | `TELEGRAM_BOT_TOKEN` | unset | Telegram bot API token |
 | `ADMIN_ID` | unset | Numeric Telegram admin user ID/IDs |
-| `SERVICE_ACCOUNT_PATH` | `credentials.json` | Google service-account JSON key |
+| `SERVICE_ACCOUNT_BASE64` | unset | Base64-encoded Google service-account JSON for Azure; local fallback uses `credentials.json` |
 | `SPREADSHEET_ID` | unset | Optional default spreadsheet ID for direct fetches |
 | `DATABASE_PATH` | `src/db/timetable.db` | SQLite database path |
 | `SCHEDULE_SNAPSHOTS_DIR` | `schedule_snapshots` | Directory for raw fetched-grid snapshots |
 | `MAX_SCHEDULE_SNAPSHOTS` | `25` | Newest snapshots retained per spreadsheet |
 | `SNAPSHOT_CLEANUP_INTERVAL_SECONDS` | `86400` | Periodic cleanup interval |
 | `CHECK_INTERVAL_SECONDS` | `43200` | Schedule-change watcher interval |
-| `SCHEDULE_PARSER` | `awful_uni_grid` | Registered timetable parser implementation |
+| `SCHEDULE_PARSER` | `awful_uni_grid` | Compatibility/default parser name; timetable ingestion uses the registered parser chain with `awful_uni_grid` last |
 | `ENVIRONMENT` | `dev` | Selects default log level |
 | `LOG_LEVEL` | derived from environment | Python log level |
 
@@ -71,7 +71,7 @@ The `ADMIN_ID` users is exempt from the global banned-user update guard. User di
 
 ## Parser Architecture
 
-`src/parser/interface.py` defines the parser protocol. Implementations live under `src/parser/implementations/`; the current `awful_uni_grid` parser handles the existing wide university timetable layout. `src/parser/registry.py` selects the implementation configured by `SCHEDULE_PARSER`.
+`src/parser/interface.py` defines the parser protocol. Implementations live under `src/parser/implementations/`; `four_week_grid` handles repeated four-week `Date, Time, Room, Course, Teacher, Form` blocks and `awful_uni_grid` handles the legacy wide layout. `src/parser/registry.py` tries registered parsers in order, accepts the first parser that produces lectures, and always tries `awful_uni_grid` last. The selected user's group study form is used as a fallback when a source layout does not encode `HR`, `HRO`, or `LR` in lecture rows.
 
 To add another layout, implement `parse_all(grid)` and `parse(grid, target_date=None, fetch_full_week=False)`, register an instance with `register_parser("your_parser", YourParser())`, and set `SCHEDULE_PARSER=your_parser`. The old `src.parser.grid` import path remains as a compatibility facade.
 

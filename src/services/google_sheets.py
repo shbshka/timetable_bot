@@ -1,10 +1,12 @@
+import base64
 import json
+import os
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 import httpx
 from google.auth.transport.requests import Request
 from google.oauth2.service_account import Credentials
-from config import SERVICE_ACCOUNT_PATH, SNAPSHOTS_DIR
+from config import PROJECT_ROOT, SNAPSHOTS_DIR
 from src.services.snapshot_cleanup import cleanup_snapshots_for_sheet
 
 from src.utils.logger import get_logger
@@ -33,10 +35,23 @@ def _save_schedule_snapshot(sheet_id: str, sheet_name: str, grid: List[List[Dict
         logger.error(f"Could not save spreadsheet snapshot: {e}", exc_info=True)
 
 
+def get_google_credentials() -> Credentials:
+    """Load Google service-account credentials for Azure or local development."""
+    encoded_creds = os.getenv("SERVICE_ACCOUNT_BASE64")
+    if encoded_creds:
+        decoded_json = base64.b64decode(encoded_creds).decode("utf-8")
+        creds_dict = json.loads(decoded_json)
+        logger.info("Loaded Google credentials from SERVICE_ACCOUNT_BASE64.")
+        return Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+
+    credentials_path = PROJECT_ROOT / "credentials.json"
+    logger.info("Loaded Google credentials from local credentials.json.")
+    return Credentials.from_service_account_file(str(credentials_path), scopes=SCOPES)
+
+
 def get_access_token() -> str:
-    """Reads SERVICE_ACCOUNT_PATH from env and generates an OAuth token."""
-    
-    creds = Credentials.from_service_account_file(str(SERVICE_ACCOUNT_PATH), scopes=SCOPES)
+    """Create an OAuth access token from the configured Google credentials."""
+    creds = get_google_credentials()
     creds.refresh(Request())
     return creds.token
 
@@ -46,7 +61,7 @@ async def fetch_sheet_data_with_sa(
     sheet_name: Optional[str] = None,
 ) -> Optional[List[List[Dict[str, str]]]]:
     """
-    Fetches values + cell notes using the service account configured in SERVICE_ACCOUNT_PATH.
+    Fetches values and cell notes using Azure base64 or local service-account credentials.
 
     :return: 2D list of dicts: [{'value': '4', 'note': '18:30-20:00'}, ...]
     """

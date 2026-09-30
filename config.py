@@ -43,8 +43,6 @@ except ValueError:
 CHECK_INTERVAL_SECONDS = int(os.getenv("CHECK_INTERVAL_SECONDS", "43200"))
 
 SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
-SPREADSHEET_GID = os.getenv("SPREADSHEET_GID")
-SERVICE_ACCOUNT_PATH = _configured_path("SERVICE_ACCOUNT_PATH", PROJECT_ROOT / "credentials.json")
 
 if MAX_SCHEDULE_SNAPSHOTS < 1:
 	raise ValueError("MAX_SCHEDULE_SNAPSHOTS must be at least 1")
