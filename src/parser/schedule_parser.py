@@ -1,20 +1,26 @@
-from datetime import date, datetime
+from datetime import datetime
 import hashlib
 import json
 from pathlib import Path
 from typing import Optional
 
 from config import SPREADSHEET_ID, SNAPSHOTS_DIR
-from src.db.repository import get_schedule_cache_state, get_schedule_for_group as read_group_schedule, replace_schedule_for_sheet
+from src.db.repository import (
+    get_group_by_id,
+    get_schedule_cache_state,
+    get_schedule_for_group as read_group_schedule,
+    replace_schedule_for_sheet,
+)
+from src.parser.academic_year import academic_start_year
 from src.parser.interface import ParsedSchedule, ScheduleGrid
+from src.parser.models import Lecture
 from src.parser.registry import parse_with_first_successful_parser
 from src.services.google_sheets import fetch_sheet_data_with_sa
 from src.utils.logger import logger
 
 
 def _current_academic_year() -> int:
-    today = date.today()
-    return today.year if today.month >= 8 else today.year - 1
+    return academic_start_year()
 
 
 def schedule_grid_hash(grid: ScheduleGrid) -> str:
@@ -22,7 +28,10 @@ def schedule_grid_hash(grid: ScheduleGrid) -> str:
     return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
 
-def refresh_schedule_cache_from_latest_snapshot(sheet_id: str) -> bool:
+def refresh_schedule_cache_from_latest_snapshot(
+    sheet_id: str,
+    fallback_level: Optional[str] = None,
+) -> bool:
     """Load and persist only the newest local snapshot for a spreadsheet."""
     snapshots = list(SNAPSHOTS_DIR.glob(f"{sheet_id}_*.json"))
     if not snapshots:
@@ -40,6 +49,12 @@ def refresh_schedule_cache_from_latest_snapshot(sheet_id: str) -> bool:
         except ValueError as e:
             logger.error(f"Could not parse schedule snapshot for '{sheet_id}': {e}", exc_info=True)
             return False
+        if fallback_level:
+            normalized_level = fallback_level.strip().upper()
+            lectures = [
+                Lecture(**{**lecture.__dict__, "level": lecture.level or normalized_level})
+                for lecture in lectures
+            ]
         
         cache_state = get_schedule_cache_state(sheet_id)
         if (
@@ -76,7 +91,11 @@ def get_cached_schedule(
     """Read schedule models from SQLite, hydrating from the newest snapshot on a cold cache."""
     cache_state = get_schedule_cache_state(sheet_id)
     if not cache_state or cache_state["academic_year"] != _current_academic_year():
-        refresh_schedule_cache_from_latest_snapshot(sheet_id)
+        group = get_group_by_id(group_id)
+        refresh_schedule_cache_from_latest_snapshot(
+            sheet_id,
+            fallback_level=group["study_form"] if group else None,
+        )
     return read_group_schedule(
         group_id=group_id,
         target_date=target_date or datetime.now(),

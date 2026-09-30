@@ -1,9 +1,9 @@
-from datetime import datetime
 from contextlib import contextmanager
 import sqlite3
 from pathlib import Path
 from typing import Iterator
 from src.utils.logger import logger
+from src.parser.academic_year import enrollment_year
 
 from config import DB_PATH, STUDY_FORMS, YEARS
 
@@ -141,12 +141,9 @@ def populate_db(db_path: Path = DB_PATH) -> None:
         with get_db_connection(db_path) as conn:
             cursor = conn.cursor()
 
-            now = datetime.now()
-            academic_start_year = now.year if now.month >= 8 else now.year - 1
-            
             for form in STUDY_FORMS:
                 for year_num in YEARS:
-                    enrollment_year = academic_start_year - (year_num - 1)
+                    group_enrollment_year = enrollment_year(year_num)
 
                     cursor.execute("""
                         INSERT INTO groups (study_form, enrollment_year)
@@ -154,7 +151,7 @@ def populate_db(db_path: Path = DB_PATH) -> None:
                         ON CONFLICT(study_form, enrollment_year) DO UPDATE 
                         SET study_form=excluded.study_form, 
                         enrollment_year=excluded.enrollment_year
-                    """, (form, enrollment_year))
+                    """, (form, group_enrollment_year))
     except sqlite3.Error as e:
         logger.error(f"Failed to populate database: {e}", exc_info=True)
         raise

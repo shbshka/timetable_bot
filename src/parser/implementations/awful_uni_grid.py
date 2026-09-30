@@ -3,6 +3,7 @@ import re
 from typing import Dict, List, Optional
 
 from src.parser.interface import ParsedSchedule, ScheduleGrid
+from src.parser.academic_year import academic_start_year
 from src.parser.models import DaySchedule, Lecture
 
 _WEEK_HEADER_RE = re.compile(r"W\d+", re.IGNORECASE)
@@ -28,11 +29,6 @@ def _value(grid: ScheduleGrid, row: int, column: int) -> str:
     if row >= len(grid) or column >= len(grid[row]):
         return ""
     return grid[row][column].get("value", "").strip()
-
-
-def _academic_start_year(grid: ScheduleGrid) -> int:
-    today = datetime.now().date()
-    return today.year if today.month >= 7 else today.year - 1
 
 
 def _month_numbers(label: str) -> List[int]:
@@ -99,7 +95,7 @@ def _date_columns(grid: ScheduleGrid) -> Dict[int, date]:
             month_for_column[column] = months[min(month_index, len(months) - 1)]
 
     anchors = []
-    year = _academic_start_year(grid)
+    year = academic_start_year()
     previous_month = None
     for column in range(first_column, last_column):
         day_text = _value(grid, 1, column)

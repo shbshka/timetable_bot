@@ -4,6 +4,7 @@ from datetime import date, datetime, timedelta
 from typing import Optional, Dict, List, Any, Iterator
 
 from src.parser.models import DaySchedule, Lecture
+from src.parser.academic_year import enrollment_year
 from src.utils.logger import logger
 
 from config import DB_PATH, SUPPORTED_USER_LOCALES
@@ -127,6 +128,16 @@ def get_group_by_form_and_year(study_form: str, enrollment_year: int) -> Optiona
         return dict(row) if row else None
 
 
+def get_group_by_id(group_id: int) -> Optional[Dict[str, Any]]:
+    """Fetch a group's study form and enrollment metadata by its database ID."""
+    with get_db_connection() as conn:
+        row = conn.execute(
+            "SELECT id, group_name, study_form, enrollment_year FROM groups WHERE id = ?",
+            (group_id,),
+        ).fetchone()
+        return dict(row) if row else None
+
+
 def get_users_for_group(group_id: int) -> List[Dict[str, Any]]:
     """List registered users and access state for an academic group."""
     with get_db_connection() as conn:
@@ -182,7 +193,8 @@ def get_active_sheets_for_watcher() -> List[Dict[str, Any]]:
                 s.sheet_id,
                 s.last_hash,
                 g.id AS group_id,
-                g.group_name
+                g.group_name,
+                g.study_form
             FROM spreadsheets s
             JOIN groups g ON s.group_id = g.id
             WHERE s.is_active = 1
@@ -232,8 +244,8 @@ def replace_schedule_for_sheet(
             if lecture.course_year is None or not lecture.level:
                 unmapped_lectures.append(lecture)
                 continue
-            enrollment_year = academic_year - lecture.course_year + 1
-            group_key = (lecture.level.strip().upper(), enrollment_year)
+            group_enrollment_year = enrollment_year(lecture.course_year, academic_year)
+            group_key = (lecture.level.strip().upper(), group_enrollment_year)
             if group_key not in group_ids:
                 group = conn.execute(
                     "SELECT id FROM groups WHERE UPPER(study_form) = ? AND enrollment_year = ?",

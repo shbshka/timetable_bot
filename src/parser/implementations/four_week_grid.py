@@ -5,13 +5,13 @@ import re
 from typing import Optional
 
 from config import STUDY_FORMS
+from src.parser.academic_year import academic_start_year
 from src.parser.interface import ParsedSchedule, ScheduleGrid
 from src.parser.models import DaySchedule, Lecture
 
 _DATE_RE = re.compile(r"(?<!\d)(\d{1,2})/(\d{1,2})(?:/(\d{2,4}))?")
 _TIME_RE = re.compile(r"(?<!\d)([01]?\d|2[0-3]):([0-5]\d)(?!\d)")
 _COURSE_YEAR_RE = re.compile(r"\b(?:курс|course)\s*(\d+)\b", re.IGNORECASE)
-_ACADEMIC_YEAR_RE = re.compile(r"\b(20\d{2})\s*/\s*(20\d{2})\b")
 
 
 def _value(grid: ScheduleGrid, row: int, column: int) -> str:
@@ -36,16 +36,6 @@ def _find_header_blocks(grid: ScheduleGrid) -> list[tuple[int, int]]:
             if header[1:6] == ["time", "room", "course", "teacher", "form"]:
                 blocks.append((row_index, column))
     return blocks
-
-
-def _academic_start_year(grid: ScheduleGrid) -> int:
-    for row in grid[:8]:
-        text = " ".join(cell.get("value", "") for cell in row)
-        match = _ACADEMIC_YEAR_RE.search(text)
-        if match:
-            return int(match.group(1))
-    today = datetime.now().date()
-    return today.year if today.month >= 8 else today.year - 1
 
 
 def _course_year(grid: ScheduleGrid, header_row: int, start_column: int) -> Optional[int]:
@@ -89,7 +79,7 @@ def _study_form(form: str) -> Optional[str]:
 
 
 def parse_all_schedule_grid(grid: ScheduleGrid) -> list[Lecture]:
-    academic_year = _academic_start_year(grid)
+    academic_year = academic_start_year()
     lectures: list[Lecture] = []
     for header_row, start_column in _find_header_blocks(grid):
         course_year = _course_year(grid, header_row, start_column)
