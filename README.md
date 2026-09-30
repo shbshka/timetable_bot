@@ -19,7 +19,7 @@ Telegram bot for viewing group timetables, managing schedule links, and notifyin
 	```
 
 3. Copy `.env.example` to `.env` and set `TELEGRAM_BOT_TOKEN`, `ADMIN_ID`, and `SERVICE_ACCOUNT_PATH`. Keep `.env` and the service-account key out of version control.
-4. Set `ADMIN_ID` to the Telegram numeric user ID allowed to use admin commands.
+4. Set `ADMIN_ID` to the Telegram numeric user ID allowed to use admin commands or a list of Telegram numeric user IDs separated with a comma.
 5. Place the service-account JSON key at the configured path and share each timetable spreadsheet with the service account's email.
 6. Start the bot from the project root:
 
@@ -36,7 +36,7 @@ All settings are read from environment variables or `.env`. Relative filesystem 
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `TELEGRAM_BOT_TOKEN` | unset | Telegram bot API token |
-| `ADMIN_ID` | unset | Numeric Telegram admin user ID |
+| `ADMIN_ID` | unset | Numeric Telegram admin user ID/IDs |
 | `SERVICE_ACCOUNT_PATH` | `credentials.json` | Google service-account JSON key |
 | `SPREADSHEET_ID` | unset | Optional default spreadsheet ID for direct fetches |
 | `DATABASE_PATH` | `src/db/timetable.db` | SQLite database path |
@@ -67,7 +67,7 @@ Snapshot retention runs both after a successful snapshot write and as a schedule
 - `/users <year 1-5> <HR|HRO|LR>` — list registered users in a group
 - `/ban <chat_id>` and `/unban <chat_id>` — restrict or restore bot access
 
-The `ADMIN_ID` user is exempt from the global banned-user update guard. User display names are refreshed when they use `/start`.
+The `ADMIN_ID` users is exempt from the global banned-user update guard. User display names are refreshed when they use `/start`.
 
 ## Parser Architecture
 

@@ -2,16 +2,14 @@ from functools import wraps
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from config import ADMIN_ID
+from config import ADMIN_IDS
 from src.utils.logger import logger
 from src.utils.messages import get_user_msg
 
 
 def is_admin(user_id: int) -> bool:
     """Checks if a user ID matches the configured admin ID."""
-    if isinstance(ADMIN_ID, list):
-        return user_id in ADMIN_ID
-    return user_id == ADMIN_ID
+    return user_id in ADMIN_IDS
 
 
 def admin_only(func):

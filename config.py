@@ -19,6 +19,7 @@ SNAPSHOTS_DIR = _configured_path("SCHEDULE_SNAPSHOTS_DIR", PROJECT_ROOT / "sched
 MAX_SCHEDULE_SNAPSHOTS = int(os.getenv("MAX_SCHEDULE_SNAPSHOTS", "25"))
 SNAPSHOT_CLEANUP_INTERVAL_SECONDS = int(os.getenv("SNAPSHOT_CLEANUP_INTERVAL_SECONDS", "86400"))
 SCHEDULE_PARSER = os.getenv("SCHEDULE_PARSER", "awful_uni_grid").strip().lower()
+SCHEDULE_STUDY_FORM = os.getenv("SCHEDULE_STUDY_FORM")
 STUDY_FORMS = {"HR", "HRO", "LR"}
 YEARS = {1, 2, 3, 4, 5}
 SUPPORTED_USER_LOCALES = {"en", "ru"}
@@ -29,11 +30,20 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", DEFAULT_LOG_LEVEL).upper()
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 _admin_raw = os.getenv("ADMIN_ID", "")
-ADMIN_ID = int(_admin_raw)
+ADMIN_IDS: set[int] = {
+    int(uid.strip())
+    for uid in _admin_raw.split(",")
+    if uid.strip().lstrip("-").isdigit()
+}
+try:
+	ADMIN_ID: int | None = next(iter(ADMIN_IDS)) if ADMIN_IDS else None
+except ValueError:
+    ADMIN_ID = None
 
 CHECK_INTERVAL_SECONDS = int(os.getenv("CHECK_INTERVAL_SECONDS", "43200"))
 
 SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
+SPREADSHEET_GID = os.getenv("SPREADSHEET_GID")
 SERVICE_ACCOUNT_PATH = _configured_path("SERVICE_ACCOUNT_PATH", PROJECT_ROOT / "credentials.json")
 
 if MAX_SCHEDULE_SNAPSHOTS < 1:
