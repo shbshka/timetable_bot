@@ -1,5 +1,6 @@
 # Timetable Bot
-
+_Vibecoded (yes, even the entire readme below) with passion, cursing at Copilot and fixing broken stuff after it, coffee mugs (total: fourteen), broken computer mouse (one; and thank god not it was not laptop screen), sleepless nights, and complete lack of time. If anything fails, blame GPT-5.6 Luna and not me. Made for personal use of the ex-SDC cohort of students who absolutely hate the new timetable layouts and the timeframe within which we were notified of this (no, seriously, we could've been warned in advance, couldn't we?)._
+##
 Telegram bot for viewing group timetables, managing schedule links, and notifying users when a linked Google Sheet changes. Schedule data is fetched into timestamped local snapshots, parsed into schedule models, and cached in SQLite so normal bot requests do not call Google Sheets.
 
 ## Requirements
