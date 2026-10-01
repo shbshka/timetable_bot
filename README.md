@@ -91,7 +91,7 @@ To add another layout, implement `parse_all(grid)` and `parse(grid, target_date=
 
 ## Data and Logs
 
-- Each successful Google Sheets fetch writes a JSON snapshot containing fetch time, spreadsheet/tab metadata, formatted cell values, and notes.
+- Each successful Google Sheets fetch writes a JSON snapshot containing fetch time, spreadsheet/tab metadata, formatted cell values, and notes. Snapshots are stored under `SCHEDULE_SNAPSHOTS_DIR/<group>/`; group names are sanitized for filesystem use, and retention is applied separately for each group and spreadsheet.
 - Parsed `Lecture` rows are associated with SQLite group records and read by schedule commands.
 - `logs/` contains rotating purpose-specific logs: `app/application.log`, `bot/telegram.log`, `database/database.log`, `parser/parser.log`, `google/google_sheets.log`, `admin/admin.log`, `jobs/jobs.log`, and `errors/errors.log`.
 - Logs also remain visible in the console. `LOG_LEVEL` controls file and normal console verbosity; test mode keeps console output at warnings and does not create log files.

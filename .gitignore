@@ -28,7 +28,7 @@ venv/
 
 # Local runtime state
 /logs/
-/schedule_snapshots/*.json
+/schedule_snapshots/
 /database.db
 /src/db/*.db
 *.sqlite

@@ -55,13 +55,14 @@ def cleanup_old_schedule_snapshots(
     if not snapshots_dir.is_dir():
         return 0
 
-    snapshots_by_sheet = defaultdict(list)
-    for path in snapshots_dir.iterdir():
+    snapshots_by_group_and_sheet = defaultdict(list)
+    for path in snapshots_dir.rglob("*.json"):
         match = _SNAPSHOT_NAME_RE.fullmatch(path.name)
         if path.is_file() and match:
-            snapshots_by_sheet[match.group("sheet_id")].append(path)
+            key = (path.parent, match.group("sheet_id"))
+            snapshots_by_group_and_sheet[key].append(path)
 
     return sum(
         _remove_oldest(snapshots, max_snapshots)
-        for snapshots in snapshots_by_sheet.values()
+        for snapshots in snapshots_by_group_and_sheet.values()
     )

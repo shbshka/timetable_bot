@@ -16,6 +16,7 @@ from src.parser.interface import ParsedSchedule, ScheduleGrid
 from src.parser.models import Lecture
 from src.parser.registry import parse_with_first_successful_parser
 from src.services.google_sheets import fetch_sheet_data_with_sa
+from src.services.snapshot_paths import snapshot_directory
 from src.utils.logger import get_logger
 
 logger = get_logger("parser")
@@ -33,9 +34,13 @@ def schedule_grid_hash(grid: ScheduleGrid) -> str:
 def refresh_schedule_cache_from_latest_snapshot(
     sheet_id: str,
     fallback_level: Optional[str] = None,
+    group_name: Optional[str] = None,
 ) -> bool:
     """Load and persist only the newest local snapshot for a spreadsheet."""
-    snapshots = list(SNAPSHOTS_DIR.glob(f"{sheet_id}_*.json"))
+    snapshots_dir = snapshot_directory(group_name)
+    snapshots = list(snapshots_dir.glob(f"{sheet_id}_*.json"))
+    if not snapshots and group_name:
+        snapshots = list(SNAPSHOTS_DIR.glob(f"{sheet_id}_*.json"))
     if not snapshots:
         logger.warning("No schedule snapshots found for spreadsheet '%s'.", sheet_id)
         return False
@@ -100,6 +105,7 @@ def get_cached_schedule(
         refresh_schedule_cache_from_latest_snapshot(
             sheet_id,
             fallback_level=group["study_form"] if group else None,
+            group_name=group["group_name"] if group else None,
         )
     else:
         logger.debug("Using current schedule cache for spreadsheet '%s'.", sheet_id)
@@ -113,13 +119,18 @@ def get_cached_schedule(
 async def fetch_schedule_grid(
     sheet_id: Optional[str] = None,
     sheet_name: Optional[str] = None,
+    group_name: Optional[str] = None,
 ) -> ScheduleGrid:
     """Fetch a spreadsheet grid using the supplied ID or configured default."""
     resolved_sheet_id = sheet_id or SPREADSHEET_ID
     if not resolved_sheet_id:
         raise ValueError("No spreadsheet ID supplied or configured in SPREADSHEET_ID")
 
-    grid = await fetch_sheet_data_with_sa(resolved_sheet_id, sheet_name=sheet_name)
+    grid = await fetch_sheet_data_with_sa(
+        resolved_sheet_id,
+        sheet_name=sheet_name,
+        group_name=group_name,
+    )
     if grid is None:
         raise RuntimeError(f"Could not fetch spreadsheet '{resolved_sheet_id}'")
     return grid
