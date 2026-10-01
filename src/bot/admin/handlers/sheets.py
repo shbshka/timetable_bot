@@ -20,12 +20,20 @@ from src.db.repository import get_pending_submission
 logger = get_logger("admin")
 
 
-async def _refresh_sheet_cache(sheet_id: str, fallback_level: str | None = None) -> bool:
-    grid = await fetch_sheet_data_with_sa(sheet_id=sheet_id)
+async def _refresh_sheet_cache(
+    sheet_id: str,
+    fallback_level: str | None = None,
+    group_name: str | None = None,
+) -> bool:
+    grid = await fetch_sheet_data_with_sa(sheet_id=sheet_id, group_name=group_name)
     if grid is None:
         return False
 
-    refresh_schedule_cache_from_latest_snapshot(sheet_id, fallback_level=fallback_level)
+    refresh_schedule_cache_from_latest_snapshot(
+        sheet_id,
+        fallback_level=fallback_level,
+        group_name=group_name,
+    )
     cache_state = get_schedule_cache_state(sheet_id)
     return bool(
         cache_state
@@ -66,7 +74,11 @@ async def handle_sheet_approval_callback(update: Update, context: ContextTypes.D
         else None
     )
 
-    if group_info and await _refresh_sheet_cache(sheet_id, fallback_level=fallback_level):
+    if group_info and await _refresh_sheet_cache(
+        sheet_id,
+        fallback_level=fallback_level,
+        group_name=group_name,
+    ):
         set_group_spreadsheet(group_id=group_id, sheet_id=sheet_id)
         logger.info(f"Admin {update.effective_user.id} attached Sheet '{sheet_id}' to Group {group_id}")
         await query.edit_message_text(
@@ -184,7 +196,11 @@ async def attach_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         )
         return
 
-    if await _refresh_sheet_cache(sheet_id, fallback_level=group_info["study_form"]):
+    if await _refresh_sheet_cache(
+        sheet_id,
+        fallback_level=group_info["study_form"],
+        group_name=group_info["group_name"],
+    ):
         set_group_spreadsheet(group_id=group_info["id"], sheet_id=sheet_id)
 
         logger.info(f"Admin {admin_chat_id} attached sheet {sheet_id} to group {group_info['group_name']}.")

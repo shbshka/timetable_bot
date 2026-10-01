@@ -36,7 +36,10 @@ async def refresh_schedules_on_startup() -> None:
 
     for sheet_id, links in unique_sheets.items():
         try:
-            grid = await fetch_sheet_data_with_sa(sheet_id=sheet_id)
+            grid = await fetch_sheet_data_with_sa(
+                sheet_id=sheet_id,
+                group_name=links[0].get("group_name"),
+            )
             if grid is None:
                 logger.error(f"Startup fetch failed for spreadsheet '{sheet_id}'.")
                 continue
@@ -47,6 +50,7 @@ async def refresh_schedules_on_startup() -> None:
             refresh_schedule_cache_from_latest_snapshot(
                 sheet_id,
                 fallback_level=links[0].get("study_form"),
+                group_name=links[0].get("group_name"),
             )
             cache_state = get_schedule_cache_state(sheet_id)
             if (
@@ -78,13 +82,17 @@ async def check_sheet_updates_job(context: ContextTypes.DEFAULT_TYPE) -> None:
 
     for sheet_id, links in unique_sheets.items():
         try:
-            grid = await fetch_sheet_data_with_sa(sheet_id=sheet_id)
+            grid = await fetch_sheet_data_with_sa(
+                sheet_id=sheet_id,
+                group_name=links[0].get("group_name"),
+            )
             if grid is None:
                 continue
 
             refreshed = refresh_schedule_cache_from_latest_snapshot(
                 sheet_id,
                 fallback_level=links[0].get("study_form"),
+                group_name=links[0].get("group_name"),
             )
             cache_state = get_schedule_cache_state(sheet_id)
             if not cache_state:

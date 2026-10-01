@@ -8,6 +8,7 @@ from google.auth.transport.requests import Request
 from google.oauth2.service_account import Credentials
 from config import PROJECT_ROOT, SNAPSHOTS_DIR
 from src.services.snapshot_cleanup import cleanup_snapshots_for_sheet
+from src.services.snapshot_paths import snapshot_directory
 
 from src.utils.logger import get_logger
 
@@ -16,9 +17,15 @@ logger = get_logger("google")
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
 
 
-def _save_schedule_snapshot(sheet_id: str, sheet_name: str, grid: List[List[Dict[str, str]]]) -> None:
+def _save_schedule_snapshot(
+    sheet_id: str,
+    sheet_name: str,
+    grid: List[List[Dict[str, str]]],
+    group_name: Optional[str] = None,
+) -> None:
     timestamp = datetime.now(timezone.utc)
-    snapshot_path = SNAPSHOTS_DIR / f"{sheet_id}_{timestamp.strftime('%Y%m%dT%H%M%S_%fZ')}.json"
+    snapshots_dir = snapshot_directory(group_name)
+    snapshot_path = snapshots_dir / f"{sheet_id}_{timestamp.strftime('%Y%m%dT%H%M%S_%fZ')}.json"
     payload = {
         "fetched_at": timestamp.isoformat(),
         "spreadsheet_id": sheet_id,
@@ -26,11 +33,11 @@ def _save_schedule_snapshot(sheet_id: str, sheet_name: str, grid: List[List[Dict
         "grid": grid,
     }
     try:
-        SNAPSHOTS_DIR.mkdir(parents=True, exist_ok=True)
+        snapshots_dir.mkdir(parents=True, exist_ok=True)
         with snapshot_path.open("w", encoding="utf-8") as snapshot_file:
             json.dump(payload, snapshot_file, ensure_ascii=False, indent=2)
         logger.info(f"Saved spreadsheet snapshot to {snapshot_path}")
-        cleanup_snapshots_for_sheet(sheet_id)
+        cleanup_snapshots_for_sheet(sheet_id, snapshots_dir=snapshots_dir)
     except OSError as e:
         logger.error(f"Could not save spreadsheet snapshot: {e}", exc_info=True)
 
@@ -59,6 +66,7 @@ def get_access_token() -> str:
 async def fetch_sheet_data_with_sa(
     sheet_id: str,
     sheet_name: Optional[str] = None,
+    group_name: Optional[str] = None,
 ) -> Optional[List[List[Dict[str, str]]]]:
     """
     Fetches values and cell notes using Azure base64 or local service-account credentials.
@@ -118,7 +126,7 @@ async def fetch_sheet_data_with_sa(
 
         logger.info(f"Parsed grid with {len(grid)} rows from sheet '{sheet_title}'")
         
-        _save_schedule_snapshot(sheet_id, sheet_title, grid)
+        _save_schedule_snapshot(sheet_id, sheet_title, grid, group_name=group_name)
         return grid
 
     except Exception as e:
