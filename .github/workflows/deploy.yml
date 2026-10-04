@@ -1,0 +1,59 @@
+name: Workflow to Deploy Timetable Bot to Azure App Service
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install -e ".[dev]"
+
+      - name: Run Unit Tests
+        run: |
+          pytest --maxfail=1
+
+  deploy:
+    needs: test
+    name: Deploy to Azure Web App
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install Runtime Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --target .python_packages/lib/site-packages .
+
+      - name: Create Zip Deployment Package
+        run: |
+          zip -r deploy.zip . -x '*.git*' '*__pycache__*' '*.venv*' 'tests/*' 'deploy.zip'
+
+      - name: Deploy Code Package to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'app-telegram-timetable-bot-5346'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: deploy.zip
