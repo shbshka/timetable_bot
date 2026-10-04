@@ -9,7 +9,7 @@ description = "A Telegram bot for university timetable lookup and schedule updat
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-	"google-auth>=2.0",
+	"google-auth[requests]>=2.0",
 	"httpx>=0.27",
 	"python-dotenv>=1.0",
 	"python-telegram-bot[job-queue]>=22.0,<23.0",
