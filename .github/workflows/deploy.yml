@@ -47,6 +47,11 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install --target .python_packages/lib/site-packages .
 
+      - name: Generate requirements.txt from pyproject.toml
+        run: |
+          python -m pip install pip-tools
+          pip-compile pyproject.toml --output-file requirements.txt --resolver=backtracking
+
       - name: Create Zip Deployment Package
         run: |
           zip -r deploy.zip . -x '*.git*' '*__pycache__*' '*.venv*' 'tests/*' 'deploy.zip'
