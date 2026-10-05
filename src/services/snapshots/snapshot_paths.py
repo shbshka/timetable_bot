@@ -1,13 +1,12 @@
 import re
 from pathlib import Path
-from typing import Optional
 
 from config import SNAPSHOTS_DIR
 
 _GROUP_NAME_RE = re.compile(r"[^A-Za-z0-9._-]+")
 
 
-def snapshot_group_name(group_name: Optional[str]) -> str:
+def snapshot_group_name(group_name: str | None) -> str:
     """Return a filesystem-safe directory name for a student group."""
     if not group_name or not group_name.strip():
         return "unassigned"
@@ -16,7 +15,7 @@ def snapshot_group_name(group_name: Optional[str]) -> str:
 
 
 def snapshot_directory(
-    group_name: Optional[str] = None,
+    group_name: str | None = None,
     snapshots_dir: Path = SNAPSHOTS_DIR,
 ) -> Path:
     """Return the directory where a group's schedule snapshots belong."""

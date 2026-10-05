@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta
-from telegram import Update
-from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
-from telegram.error import BadRequest
 
+from telegram import Update
+from telegram.error import BadRequest
+from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
+
+from src.bot.keyboards.schedule import daily_schedule_keyboard, weekly_schedule_keyboard
 from src.db.repository import get_user_locale, get_user_schedule_context
 from src.parser.schedule_parser import get_cached_schedule
 from src.services.admin_notifier import forward_message_to_admin, notify_admin_of_error
-from src.bot.keyboards.schedule import daily_schedule_keyboard, weekly_schedule_keyboard
 from src.utils.formatter import format_daily_schedule, format_weekly_schedule
 from src.utils.logger import get_logger
 from src.utils.time import institution_now
@@ -15,7 +16,7 @@ logger = get_logger("bot")
 from src.utils.messages import get_user_msg
 
 
-async def _get_schedule_for_user(chat_id: int):
+async def _get_user_schedule_context(chat_id: int) -> tuple[dict | None, str | None]:
     """
     Helper function to validate user registration and fetch their active schedule context.
     Returns (user_context, None) on success, or (None, error_message) on failure.
@@ -77,7 +78,7 @@ async def render_daily_schedule(update: Update, context: ContextTypes.DEFAULT_TY
     Edits existing message if triggered by Inline Button, or sends a new reply for Commands.
     """
     chat_id = update.effective_chat.id
-    user_context, error_msg = await _get_schedule_for_user(chat_id)
+    user_context, error_msg = await _get_user_schedule_context(chat_id)
 
     if error_msg:
         group_context = get_user_schedule_context(chat_id)
@@ -142,16 +143,6 @@ async def render_daily_schedule(update: Update, context: ContextTypes.DEFAULT_TY
             await update.effective_message.reply_text(fail_msg)
 
 
-async def today_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handles the /today command."""
-    await render_daily_schedule(update, context, institution_now())
-
-
-async def tomorrow_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handles the /tomorrow command."""
-    await render_daily_schedule(update, context, institution_now() + timedelta(days=1))
-
-
 async def render_weekly_schedule(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -159,7 +150,7 @@ async def render_weekly_schedule(
 ) -> None:
     """Render a selected calendar week with week-level pagination controls."""
     chat_id = update.effective_chat.id
-    user_context, error_msg = await _get_schedule_for_user(chat_id)
+    user_context, error_msg = await _get_user_schedule_context(chat_id)
 
     if error_msg:
         if update.callback_query:
@@ -208,6 +199,16 @@ async def render_weekly_schedule(
             await update.callback_query.edit_message_text(fail_msg)
         elif update.effective_message:
             await update.effective_message.reply_text(fail_msg)
+
+
+async def today_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handles the /today command."""
+    await render_daily_schedule(update, context, institution_now())
+
+
+async def tomorrow_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handles the /tomorrow command."""
+    await render_daily_schedule(update, context, institution_now() + timedelta(days=1))
 
 
 async def week_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

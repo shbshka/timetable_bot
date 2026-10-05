@@ -6,10 +6,11 @@ from src.bot.keyboards.start import main_menu_keyboard
 def test_group_and_language_keyboards_expose_expected_actions() -> None:
     # Arrange
     forms = {"HR", "LR"}
+    years = {1, 2, 3, 4, 5}
 
     # Act
     form_callbacks = [button.callback_data for row in form_selection_keyboard(forms).inline_keyboard for button in row]
-    year_callbacks = [button.callback_data for row in year_selection_keyboard().inline_keyboard for button in row]
+    year_callbacks = [button.callback_data for row in year_selection_keyboard(years).inline_keyboard for button in row]
     language_callbacks = [button.callback_data for row in language_keyboard().inline_keyboard for button in row]
 
     # Assert

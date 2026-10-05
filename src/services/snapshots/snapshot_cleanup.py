@@ -1,7 +1,7 @@
 import re
 from collections import defaultdict
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 from config import MAX_SCHEDULE_SNAPSHOTS, SNAPSHOTS_DIR
 from src.utils.logger import get_logger

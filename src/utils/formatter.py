@@ -1,6 +1,5 @@
 from datetime import datetime
 from html import escape
-from typing import List
 
 from src.parser.models import DaySchedule, Lecture
 from src.utils.messages import get_msg
@@ -36,7 +35,7 @@ def _format_lecture(lecture: Lecture, locale: str) -> str:
 	return f"- <code>{time}</code> | <b>{escape(lecture.subject)}</b>{room_info}{teacher_info}{detail_text}\n"
 
 
-def format_daily_schedule(group_name: str, date: datetime, schedule: List[DaySchedule], locale: str = "ru") -> str:
+def format_daily_schedule(group_name: str, date: datetime, schedule: list[DaySchedule], locale: str = "ru") -> str:
 	date_str = _format_schedule_date(date, locale, include_year=True)
 	lectures = schedule[0].lectures if schedule else []
 
@@ -50,7 +49,7 @@ def format_daily_schedule(group_name: str, date: datetime, schedule: List[DaySch
 	return text
 
 
-def format_weekly_schedule(group_name: str, weekly_schedule: List[DaySchedule], locale: str = "ru") -> str:
+def format_weekly_schedule(group_name: str, weekly_schedule: list[DaySchedule], locale: str = "ru") -> str:
 	week_lines = []
 	for day_schedule in weekly_schedule:
 		day_name = _format_schedule_date(day_schedule.date, locale, include_year=False)

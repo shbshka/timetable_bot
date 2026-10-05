@@ -1,7 +1,8 @@
 # src/utils/messages.py
-from functools import lru_cache
+from functools import cache
 from html import escape
 from pathlib import Path
+
 import yaml
 
 LOCALES_DIR = Path(__file__).resolve().parents[1] / "bot" / "locales"
@@ -9,7 +10,7 @@ DEFAULT_LOCALE = "ru"
 SUPPORTED_LOCALES = ("en", "ru")
 
 
-@lru_cache(maxsize=None)
+@cache
 def _load_messages(locale: str) -> dict:
     if locale not in SUPPORTED_LOCALES:
         locale = DEFAULT_LOCALE

@@ -1,5 +1,5 @@
-from src.services.snapshot_cleanup import cleanup_old_schedule_snapshots
-from src.services.snapshot_paths import snapshot_directory, snapshot_group_name
+from src.services.snapshots.snapshot_cleanup import cleanup_old_schedule_snapshots
+from src.services.snapshots.snapshot_paths import snapshot_directory, snapshot_group_name
 
 
 def _snapshot_name(sheet_id: str, index: int) -> str:

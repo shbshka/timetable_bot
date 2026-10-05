@@ -1,9 +1,8 @@
-from datetime import date, datetime, timedelta
 import re
-from typing import Dict, List, Optional
+from datetime import date, datetime, timedelta
 
-from src.parser.interface import ParsedSchedule, ScheduleGrid
 from src.parser.academic_year import academic_start_year
+from src.parser.interface import ParsedSchedule, ScheduleGrid
 from src.parser.models import DaySchedule, Lecture
 from src.utils.time import institution_today
 
@@ -32,7 +31,7 @@ def _value(grid: ScheduleGrid, row: int, column: int) -> str:
     return grid[row][column].get("value", "").strip()
 
 
-def _month_numbers(label: str) -> List[int]:
+def _month_numbers(label: str) -> list[int]:
     months = []
     for part in re.split(r"[/\s-]+", label.lower()):
         for abbreviation, month in _MONTHS.items():
@@ -42,7 +41,7 @@ def _month_numbers(label: str) -> List[int]:
     return months
 
 
-def _date_columns(grid: ScheduleGrid) -> Dict[int, date]:
+def _date_columns(grid: ScheduleGrid) -> dict[int, date]:
     if len(grid) < 3:
         return {}
 
@@ -58,7 +57,7 @@ def _date_columns(grid: ScheduleGrid) -> Dict[int, date]:
         11,
     )
     last_column = max(len(week_row), len(date_row), len(month_row))
-    month_for_column: Dict[int, int] = {}
+    month_for_column: dict[int, int] = {}
     for block_start in range(first_column, last_column, 7):
         label = _value(grid, 2, block_start)
         months = _month_numbers(label)
@@ -115,7 +114,7 @@ def _date_columns(grid: ScheduleGrid) -> Dict[int, date]:
     if not anchors:
         return {}
 
-    dates: Dict[int, date] = {}
+    dates: dict[int, date] = {}
     first_anchor_column, first_anchor_date = anchors[0]
     for column in range(first_column, first_anchor_column):
         dates[column] = first_anchor_date - timedelta(days=first_anchor_column - column)
@@ -133,7 +132,7 @@ def _date_columns(grid: ScheduleGrid) -> Dict[int, date]:
     return dates
 
 
-def _hours(value: str) -> Optional[float]:
+def _hours(value: str) -> float | None:
     try:
         hours = float(value.replace(",", "."))
     except ValueError:
@@ -141,7 +140,7 @@ def _hours(value: str) -> Optional[float]:
     return hours if hours > 0 else None
 
 
-def _normalized_time(note: str) -> Optional[str]:
+def _normalized_time(note: str) -> str | None:
     matches = [f"{hour.zfill(2)}:{minute}" for hour, minute in _TIME_RE.findall(note)]
     if not matches:
         return None
@@ -153,14 +152,14 @@ def _normalized_time(note: str) -> Optional[str]:
     return ", ".join(intervals)
 
 
-def _course_year(value: str) -> Optional[int]:
+def _course_year(value: str) -> int | None:
     match = re.match(r"\s*(\d+)\s*(?:\D.*)?$", value)
     return int(match.group(1)) if match else None
 
 
 def parse_schedule_grid(
     grid: ScheduleGrid,
-    target_date: Optional[datetime] = None,
+    target_date: datetime | None = None,
     fetch_full_week: bool = False,
 ) -> ParsedSchedule:
     """Parse and select one date or calendar week from this timetable layout."""
@@ -194,7 +193,7 @@ def parse_schedule_grid(
     ]
 
 
-def parse_all_schedule_grid(grid: ScheduleGrid) -> List[Lecture]:
+def parse_all_schedule_grid(grid: ScheduleGrid) -> list[Lecture]:
     """Parse every scheduled cell, preserving its course-year and delivery metadata."""
     if not grid:
         return []
@@ -204,13 +203,13 @@ def parse_all_schedule_grid(grid: ScheduleGrid) -> List[Lecture]:
         return []
 
     first_date_column = min(date_by_column)
-    active_year: Optional[int] = None
-    active_subject: Optional[str] = None
-    active_form: Optional[str] = None
-    active_level: Optional[str] = None
-    active_mode: Optional[str] = None
-    active_course_notes: Optional[str] = None
-    lectures: List[Lecture] = []
+    active_year: int | None = None
+    active_subject: str | None = None
+    active_form: str | None = None
+    active_level: str | None = None
+    active_mode: str | None = None
+    active_course_notes: str | None = None
+    lectures: list[Lecture] = []
 
     for row_index in range(3, len(grid)):
         row = grid[row_index]
@@ -275,13 +274,13 @@ def parse_all_schedule_grid(grid: ScheduleGrid) -> List[Lecture]:
 class AwfulUniGridParser:
     """Parser for the university's current wide weekly spreadsheet layout."""
 
-    def parse_all(self, grid: ScheduleGrid) -> List[Lecture]:
+    def parse_all(self, grid: ScheduleGrid) -> list[Lecture]:
         return parse_all_schedule_grid(grid)
 
     def parse(
         self,
         grid: ScheduleGrid,
-        target_date: Optional[datetime] = None,
+        target_date: datetime | None = None,
         fetch_full_week: bool = False,
     ) -> ParsedSchedule:
         return parse_schedule_grid(grid, target_date=target_date, fetch_full_week=fetch_full_week)

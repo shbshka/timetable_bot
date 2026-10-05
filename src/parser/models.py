@@ -1,22 +1,21 @@
 from dataclasses import dataclass
 from datetime import date
-from typing import Optional
 
 
 @dataclass
 class Lecture:
     date: date
-    time: Optional[str]
+    time: str | None
     subject: str
-    room: Optional[str] = None
-    teacher: Optional[str] = None
-    form: Optional[str] = None
-    hours: Optional[float] = None
-    course_year: Optional[int] = None
-    level: Optional[str] = None
-    delivery_mode: Optional[str] = None
-    course_notes: Optional[str] = None
-    cell_note: Optional[str] = None
+    room: str | None = None
+    teacher: str | None = None
+    form: str | None = None
+    hours: float | None = None
+    course_year: int | None = None
+    level: str | None = None
+    delivery_mode: str | None = None
+    course_notes: str | None = None
+    cell_note: str | None = None
 
 
 @dataclass

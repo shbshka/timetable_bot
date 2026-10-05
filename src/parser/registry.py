@@ -1,4 +1,4 @@
-from typing import Dict, Iterator, Optional
+from collections.abc import Iterator
 
 from config import SCHEDULE_PARSER
 from src.parser.implementations.awful_uni_grid import AwfulUniGridParser
@@ -9,7 +9,7 @@ from src.utils.logger import get_logger
 
 logger = get_logger("parser")
 
-_PARSERS: Dict[str, ScheduleParser] = {
+_PARSERS: dict[str, ScheduleParser] = {
     "four_week_grid": FourWeekGridParser(),
     "awful_uni_grid": AwfulUniGridParser(),
 }
@@ -27,7 +27,7 @@ def register_parser(name: str, parser: ScheduleParser, *, replace: bool = False)
 
 
 def iter_parser_chain() -> Iterator[tuple[str, ScheduleParser]]:
-    """Yield registered parsers in detection order, with the legacy parser last."""
+    """Yield registered parsers in detection order, with the fallback parser last."""
     for name, parser in _PARSERS.items():
         if name != _FALLBACK_PARSER_NAME:
             yield name, parser
@@ -54,7 +54,7 @@ def parse_with_first_successful_parser(grid) -> tuple[str, ScheduleParser, list[
     raise ValueError(f"No schedule parser could parse the timetable: {details}")
 
 
-def get_parser(name: Optional[str] = None) -> ScheduleParser:
+def get_parser(name: str | None = None) -> ScheduleParser:
     """Return the configured parser, or a named parser for explicit selection."""
     parser_name = (name or SCHEDULE_PARSER).strip().lower()
     try:

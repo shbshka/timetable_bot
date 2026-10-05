@@ -1,20 +1,20 @@
 from datetime import datetime
-from typing import Dict, List, Optional, Protocol
+from typing import Protocol
 
 from src.parser.models import DaySchedule, Lecture
 
-ScheduleGrid = List[List[Dict[str, str]]]
-ParsedSchedule = List[DaySchedule]
+ScheduleGrid = list[list[dict[str, str]]]
+ParsedSchedule = list[DaySchedule]
 
 
 class ScheduleParser(Protocol):
     """Contract implemented by each supported timetable format parser."""
 
-    def parse_all(self, grid: ScheduleGrid) -> List[Lecture]: ...
+    def parse_all(self, grid: ScheduleGrid) -> list[Lecture]: ...
 
     def parse(
         self,
         grid: ScheduleGrid,
-        target_date: Optional[datetime] = None,
+        target_date: datetime | None = None,
         fetch_full_week: bool = False,
     ) -> ParsedSchedule: ...

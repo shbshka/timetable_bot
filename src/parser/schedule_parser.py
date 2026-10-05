@@ -1,22 +1,22 @@
-from datetime import datetime
 import hashlib
 import json
-from pathlib import Path
-from typing import Optional
+from datetime import datetime
 
-from config import SPREADSHEET_ID, SNAPSHOTS_DIR
+from config import SNAPSHOTS_DIR, SPREADSHEET_ID
 from src.db.repository import (
     get_group_by_id,
     get_schedule_cache_state,
-    get_schedule_for_group as read_group_schedule,
     replace_schedule_for_sheet,
+)
+from src.db.repository import (
+    get_schedule_for_group as read_group_schedule,
 )
 from src.parser.academic_year import academic_start_year
 from src.parser.interface import ParsedSchedule, ScheduleGrid
 from src.parser.models import Lecture
 from src.parser.registry import parse_with_first_successful_parser
 from src.services.google_sheets import fetch_sheet_data_with_sa
-from src.services.snapshot_paths import snapshot_directory
+from src.services.snapshots.snapshot_paths import snapshot_directory
 from src.utils.logger import get_logger
 from src.utils.time import institution_now
 
@@ -34,8 +34,8 @@ def schedule_grid_hash(grid: ScheduleGrid) -> str:
 
 def refresh_schedule_cache_from_latest_snapshot(
     sheet_id: str,
-    fallback_level: Optional[str] = None,
-    group_name: Optional[str] = None,
+    fallback_level: str | None = None,
+    group_name: str | None = None,
 ) -> bool:
     """Load and persist only the newest local snapshot for a spreadsheet."""
     snapshots_dir = snapshot_directory(group_name)
@@ -54,7 +54,7 @@ def refresh_schedule_cache_from_latest_snapshot(
         academic_year = _current_academic_year()
 
         try:
-            parser_name, parser, lectures = parse_with_first_successful_parser(grid)
+            parser_name, _, lectures = parse_with_first_successful_parser(grid)
         except ValueError as e:
             logger.error(f"Could not parse schedule snapshot for '{sheet_id}': {e}", exc_info=True)
             return False
@@ -95,7 +95,7 @@ def refresh_schedule_cache_from_latest_snapshot(
 def get_cached_schedule(
     sheet_id: str,
     group_id: int,
-    target_date: Optional[datetime] = None,
+    target_date: datetime | None = None,
     fetch_full_week: bool = False,
 ) -> ParsedSchedule:
     """Read schedule models from SQLite, hydrating from the newest snapshot on a cold cache."""
@@ -118,9 +118,9 @@ def get_cached_schedule(
 
 
 async def fetch_schedule_grid(
-    sheet_id: Optional[str] = None,
-    sheet_name: Optional[str] = None,
-    group_name: Optional[str] = None,
+    sheet_id: str | None = None,
+    sheet_name: str | None = None,
+    group_name: str | None = None,
 ) -> ScheduleGrid:
     """Fetch a spreadsheet grid using the supplied ID or configured default."""
     resolved_sheet_id = sheet_id or SPREADSHEET_ID
@@ -138,8 +138,8 @@ async def fetch_schedule_grid(
 
 
 async def fetch_and_parse_schedule(
-    sheet_id: Optional[str] = None,
-    target_date: Optional[datetime] = None,
+    sheet_id: str | None = None,
+    target_date: datetime | None = None,
     fetch_full_week: bool = False,
 ) -> ParsedSchedule:
     """Fetch schedule cells, then hand them to the layout-specific parser."""

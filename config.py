@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
 from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -16,10 +17,19 @@ def _configured_path(variable_name: str, default: Path) -> Path:
 ENVIRONMENT = os.getenv("ENVIRONMENT", "dev").lower()
 
 DB_PATH = _configured_path("DATABASE_PATH", PROJECT_ROOT / "src" / "db" / "timetable.db")
+
 SNAPSHOTS_DIR = _configured_path("SCHEDULE_SNAPSHOTS_DIR", PROJECT_ROOT / "schedule_snapshots")
-MAX_SCHEDULE_SNAPSHOTS = int(os.getenv("MAX_SCHEDULE_SNAPSHOTS", "25"))
 SNAPSHOT_CLEANUP_INTERVAL_SECONDS = int(os.getenv("SNAPSHOT_CLEANUP_INTERVAL_SECONDS", "86400"))
+CHECK_INTERVAL_SECONDS = int(os.getenv("CHECK_INTERVAL_SECONDS", "43200"))
+
+MAX_SCHEDULE_SNAPSHOTS = int(os.getenv("MAX_SCHEDULE_SNAPSHOTS", "25"))
+if MAX_SCHEDULE_SNAPSHOTS < 1:
+	raise ValueError("MAX_SCHEDULE_SNAPSHOTS must be at least 1")
+if SNAPSHOT_CLEANUP_INTERVAL_SECONDS < 1:
+	raise ValueError("SNAPSHOT_CLEANUP_INTERVAL_SECONDS must be positive")
+
 SCHEDULE_PARSER = os.getenv("SCHEDULE_PARSER", "awful_uni_grid").strip().lower()
+
 _timezone_name = os.getenv("INSTITUTION_TIMEZONE", "Europe/Vilnius").strip()
 try:
 	INSTITUTION_TIMEZONE = ZoneInfo(_timezone_name)
@@ -28,6 +38,8 @@ except ZoneInfoNotFoundError as exc:
 
 STUDY_FORMS = {"HR", "HRO", "LR"}
 YEARS = {1, 2, 3, 4, 5}
+MAJORS = {"JA", "CS", "JS"}
+
 SUPPORTED_USER_LOCALES = {"en", "ru"}
 
 DEFAULT_LOG_LEVEL = "DEBUG" if ENVIRONMENT in ("dev", "test") else "INFO"
@@ -46,11 +58,4 @@ try:
 except ValueError:
     ADMIN_ID = None
 
-CHECK_INTERVAL_SECONDS = int(os.getenv("CHECK_INTERVAL_SECONDS", "43200"))
-
 SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
-
-if MAX_SCHEDULE_SNAPSHOTS < 1:
-	raise ValueError("MAX_SCHEDULE_SNAPSHOTS must be at least 1")
-if SNAPSHOT_CLEANUP_INTERVAL_SECONDS < 1:
-	raise ValueError("SNAPSHOT_CLEANUP_INTERVAL_SECONDS must be positive")

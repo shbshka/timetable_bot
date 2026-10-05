@@ -17,13 +17,13 @@ def main() -> None:
     logger.info("Starting University Timetable Bot...")
 
     try:
+        logger.info("Initializing health server...")
         health_server = start_health_server()
+        logger.info(f"Health server started on {health_server.server_address}")
 
-        # Build and configure bot application
         app = create_bot_app()
-
-        # Start long-polling loop
         logger.info("Bot successfully initialized. Starting polling loop...")
+
         app.run_polling(drop_pending_updates=True)
 
     except KeyboardInterrupt:
@@ -35,6 +35,9 @@ def main() -> None:
         if "health_server" in locals():
             health_server.shutdown()
             health_server.server_close()
+            logger.info("Health server has been shut down.")
+
+        logger.info("Bot has been shut down.")
 
 
 if __name__ == "__main__":

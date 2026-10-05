@@ -1,7 +1,7 @@
 import logging
 import sys
 from logging.handlers import RotatingFileHandler
-from pathlib import Path
+
 from config import ENVIRONMENT, LOG_LEVEL, PROJECT_ROOT
 
 ROOT_LOGGER_NAME = "timetable_bot"

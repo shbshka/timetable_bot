@@ -1,10 +1,10 @@
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler
 
 from src.bot.admin.handlers.sheets import (
-    attach_command, 
-    detach_command, 
-    handle_sheet_approval_callback, 
-    handle_sheet_rejection_callback
+    attach_command,
+    detach_command,
+    handle_sheet_approval_callback,
+    handle_sheet_rejection_callback,
 )
 from src.bot.admin.handlers.users import (
     admin_help_command,
