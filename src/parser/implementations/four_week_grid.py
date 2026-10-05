@@ -1,8 +1,7 @@
 """Parser for the four-week, horizontally repeated timetable export."""
 
-from datetime import date, datetime, timedelta
 import re
-from typing import Optional
+from datetime import date, datetime, timedelta
 
 from config import STUDY_FORMS
 from src.parser.academic_year import academic_start_year
@@ -39,7 +38,7 @@ def _find_header_blocks(grid: ScheduleGrid) -> list[tuple[int, int]]:
     return blocks
 
 
-def _course_year(grid: ScheduleGrid, header_row: int, start_column: int) -> Optional[int]:
+def _course_year(grid: ScheduleGrid, header_row: int, start_column: int) -> int | None:
     for row_index in range(max(0, header_row - 4), header_row):
         text = " ".join(_value(grid, row_index, column) for column in range(start_column, start_column + 6))
         match = _COURSE_YEAR_RE.search(text)
@@ -48,7 +47,7 @@ def _course_year(grid: ScheduleGrid, header_row: int, start_column: int) -> Opti
     return None
 
 
-def _parse_date(value: str, academic_year: int, previous: Optional[date]) -> Optional[date]:
+def _parse_date(value: str, academic_year: int, previous: date | None) -> date | None:
     match = _DATE_RE.search(value)
     if not match:
         return None
@@ -64,7 +63,7 @@ def _parse_date(value: str, academic_year: int, previous: Optional[date]) -> Opt
         return None
 
 
-def _duration_hours(value: str) -> Optional[float]:
+def _duration_hours(value: str) -> float | None:
     matches = _TIME_RE.findall(value)
     if len(matches) < 2:
         return None
@@ -74,7 +73,7 @@ def _duration_hours(value: str) -> Optional[float]:
     return duration if duration > 0 else None
 
 
-def _study_form(form: str) -> Optional[str]:
+def _study_form(form: str) -> str | None:
     normalized = form.strip().upper()
     return normalized if normalized in STUDY_FORMS else None
 
@@ -84,7 +83,7 @@ def parse_all_schedule_grid(grid: ScheduleGrid) -> list[Lecture]:
     lectures: list[Lecture] = []
     for header_row, start_column in _find_header_blocks(grid):
         course_year = _course_year(grid, header_row, start_column)
-        current_date: Optional[date] = None
+        current_date: date | None = None
         for row_index in range(header_row + 1, len(grid)):
             date_value = _value(grid, row_index, start_column)
             parsed_date = _parse_date(date_value, academic_year, current_date)
@@ -115,7 +114,7 @@ def parse_all_schedule_grid(grid: ScheduleGrid) -> list[Lecture]:
 
 def parse_schedule_grid(
     grid: ScheduleGrid,
-    target_date: Optional[datetime] = None,
+    target_date: datetime | None = None,
     fetch_full_week: bool = False,
 ) -> ParsedSchedule:
     lectures = parse_all_schedule_grid(grid)
@@ -144,7 +143,7 @@ class FourWeekGridParser:
     def parse(
         self,
         grid: ScheduleGrid,
-        target_date: Optional[datetime] = None,
+        target_date: datetime | None = None,
         fetch_full_week: bool = False,
     ) -> ParsedSchedule:
         return parse_schedule_grid(grid, target_date=target_date, fetch_full_week=fetch_full_week)

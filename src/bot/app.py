@@ -1,19 +1,18 @@
+from telegram import Update
 from telegram.ext import (
     Application,
     ApplicationBuilder,
     TypeHandler,
 )
-from telegram import Update
 
 from config import CHECK_INTERVAL_SECONDS, SNAPSHOT_CLEANUP_INTERVAL_SECONDS, TELEGRAM_BOT_TOKEN
 from src.bot.admin.access import block_banned_users
-from src.bot.handlers.group import register_group_handlers
-
 from src.bot.admin.router import register_admin_handlers
+from src.bot.handlers.group import register_group_handlers
+from src.bot.handlers.help import register_help_handler
+from src.bot.handlers.language import register_language_handler
 from src.bot.handlers.schedule import register_schedule_handlers
 from src.bot.handlers.start import register_start_handler
-from src.bot.handlers.language import register_language_handler
-from src.bot.handlers.help import register_help_handler
 from src.bot.jobs.watcher import (
     check_sheet_updates_job,
     cleanup_schedule_snapshots_job,

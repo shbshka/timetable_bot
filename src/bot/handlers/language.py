@@ -1,9 +1,13 @@
 from telegram import Update
 from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
 
-from src.db.repository import get_user_locale, set_user_locale
-from src.utils.messages import get_user_msg
 from src.bot.keyboards.language import language_keyboard
+from src.bot.keyboards.start import main_menu_keyboard
+from src.db.repository import get_user_schedule_context, set_user_locale
+from src.utils.logger import get_logger
+from src.utils.messages import get_user_msg
+
+logger = get_logger("bot")
 
 LANGUAGE_NAMES = {"en": "English", "ru": "Русский"}
 
@@ -32,9 +36,15 @@ async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
     chat_id = update.effective_chat.id
     set_user_locale(chat_id, locale)
+    logger.info(f"User {chat_id} changed language to {locale}")
+
+    user_context = get_user_schedule_context(chat_id)
+    logger.info(f"Retrieved user context for chat_id {chat_id}: {user_context}")
+
     await query.answer()
     await query.edit_message_text(
-        get_user_msg(chat_id, "language.changed", language=LANGUAGE_NAMES[locale])
+        get_user_msg(chat_id, "language.changed", language=LANGUAGE_NAMES[locale]),
+        reply_markup=main_menu_keyboard(chat_id, bool(user_context and user_context.get("group_name"))),
     )
 
 

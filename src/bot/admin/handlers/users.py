@@ -3,16 +3,16 @@ from html import escape
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from config import STUDY_FORMS, YEARS
 from src.bot.admin.auth import admin_only
 from src.db.repository import (
     get_group_by_form_and_year,
     get_users_for_group,
     set_user_banned,
 )
-from src.utils.messages import get_user_msg
 from src.parser.academic_year import enrollment_year
 from src.utils.logger import get_logger
-from config import STUDY_FORMS, YEARS
+from src.utils.messages import get_user_msg
 
 logger = get_logger("admin")
 

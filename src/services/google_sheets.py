@@ -2,15 +2,15 @@ import asyncio
 import base64
 import json
 import os
-from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from datetime import UTC, datetime
+
 import httpx
 from google.auth.transport.requests import Request
 from google.oauth2.service_account import Credentials
-from config import PROJECT_ROOT, SNAPSHOTS_DIR
-from src.services.snapshot_cleanup import cleanup_snapshots_for_sheet
-from src.services.snapshot_paths import snapshot_directory
 
+from config import PROJECT_ROOT
+from src.services.snapshots.snapshot_cleanup import cleanup_snapshots_for_sheet
+from src.services.snapshots.snapshot_paths import snapshot_directory
 from src.utils.logger import get_logger
 
 logger = get_logger("google")
@@ -21,10 +21,10 @@ SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
 def _save_schedule_snapshot(
     sheet_id: str,
     sheet_name: str,
-    grid: List[List[Dict[str, str]]],
-    group_name: Optional[str] = None,
+    grid: list[list[dict[str, str]]],
+    group_name: str | None = None,
 ) -> None:
-    timestamp = datetime.now(timezone.utc)
+    timestamp = datetime.now(UTC)
     snapshots_dir = snapshot_directory(group_name)
     snapshot_path = snapshots_dir / f"{sheet_id}_{timestamp.strftime('%Y%m%dT%H%M%S_%fZ')}.json"
     payload = {
@@ -66,9 +66,9 @@ def get_access_token() -> str:
 
 async def fetch_sheet_data_with_sa(
     sheet_id: str,
-    sheet_name: Optional[str] = None,
-    group_name: Optional[str] = None,
-) -> Optional[List[List[Dict[str, str]]]]:
+    sheet_name: str | None = None,
+    group_name: str | None = None,
+) -> list[list[dict[str, str]]] | None:
     """
     Fetches values and cell notes using Azure base64 or local service-account credentials.
 

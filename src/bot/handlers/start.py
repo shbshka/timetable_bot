@@ -26,8 +26,8 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         username=update.effective_user.username,
         first_name=update.effective_user.first_name,
     )
-    user_context = get_user_schedule_context(chat_id)
 
+    user_context = get_user_schedule_context(chat_id)
     logger.info(f"Retrieved user context for chat_id {chat_id}: {user_context}")
 
     if user_context and user_context.get("group_name"):
@@ -39,6 +39,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         )
     else:
         welcome_text = get_user_msg(chat_id, "start.welcome_new", first_name=first_name)
+
     reply_markup = main_menu_keyboard(chat_id, bool(user_context and user_context.get("group_name")))
 
     if update.message:

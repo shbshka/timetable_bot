@@ -37,7 +37,7 @@ btns:
   btn_current_week: "📅 Текущая неделя"
   btn_change_group: "⚙️ Сменить группу"
   btn_select_group: "🎓 Выбрать группу"
-  btn_language: "🌐 Язык"
+  btn_language: "🌐 Язык / Language"
   btn_home: "🏠 Главное меню"
 
 language:
@@ -46,11 +46,17 @@ language:
 
 group:
   choose_form:
-    step_1: "Шаг 1/2: Выбери форму обучения:"
+    step_1: "Шаг 1/3: Выбери форму обучения:"
     step_2: |
       Форма: <b>{selected_form}</b>
 
-      Шаг 2/2: Выбери курс:
+      Шаг 2/3: Выбери курс:
+    step_3: |
+      Форма: <b>{selected_form}</b>
+      Курс: <b>{selected_year}</b>
+
+      Шаг 3/3: Выбери специальность [в разработке]:
+
   errors:
     not_chosen: "⚠️ Сначала выбери группу через /group"
     not_found: |

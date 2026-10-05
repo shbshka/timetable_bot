@@ -1,9 +1,8 @@
 # src/utils/sheets_parser.py
 import re
-from typing import Optional
 
 
-def extract_sheet_id(url_or_id: str) -> Optional[str]:
+def extract_sheet_id(url_or_id: str) -> str | None:
     """
     Extracts the spreadsheet ID from a full Google Sheets URL,
     or returns the input if it's already a raw ID.

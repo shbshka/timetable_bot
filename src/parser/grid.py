@@ -1,16 +1,15 @@
 """Compatibility: legacy imports -> the parser registry."""
 
 from datetime import datetime
-from typing import Optional
 
 from src.parser.interface import ParsedSchedule, ScheduleGrid
-from src.parser.registry import parse_with_first_successful_parser
 from src.parser.models import Lecture
+from src.parser.registry import parse_with_first_successful_parser
 
 
 def parse_schedule_grid(
     grid: ScheduleGrid,
-    target_date: Optional[datetime] = None,
+    target_date: datetime | None = None,
     fetch_full_week: bool = False,
 ) -> ParsedSchedule:
     _, parser, _ = parse_with_first_successful_parser(grid)

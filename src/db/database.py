@@ -1,11 +1,11 @@
-from contextlib import contextmanager
 import sqlite3
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator
-from src.utils.logger import get_logger
-from src.parser.academic_year import enrollment_year
 
 from config import DB_PATH, STUDY_FORMS, YEARS
+from src.parser.academic_year import enrollment_year
+from src.utils.logger import get_logger
 
 logger = get_logger("database")
 

@@ -1,8 +1,5 @@
-from datetime import datetime
-
 from telegram.ext import ContextTypes
-from src.services.snapshot_cleanup import cleanup_old_schedule_snapshots
-from src.services.google_sheets import fetch_sheet_data_with_sa
+
 from src.db.repository import (
     enqueue_schedule_notifications,
     get_active_sheets_for_watcher,
@@ -13,8 +10,13 @@ from src.db.repository import (
     mark_schedule_notification_delivered,
     update_spreadsheet_hash,
 )
-from src.parser.schedule_parser import refresh_schedule_cache_from_latest_snapshot, schedule_grid_hash
 from src.parser.registry import parse_with_first_successful_parser
+from src.parser.schedule_parser import (
+    refresh_schedule_cache_from_latest_snapshot,
+    schedule_grid_hash,
+)
+from src.services.google_sheets import fetch_sheet_data_with_sa
+from src.services.snapshots.snapshot_cleanup import cleanup_old_schedule_snapshots
 from src.utils.logger import get_logger
 
 logger = get_logger("jobs")

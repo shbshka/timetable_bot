@@ -1,13 +1,13 @@
 import sqlite3
+from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta
-from typing import Optional, Dict, List, Any, Iterator
-
-from src.parser.models import DaySchedule, Lecture
-from src.parser.academic_year import enrollment_year
-from src.utils.logger import get_logger
+from typing import Any
 
 from config import DB_PATH, SUPPORTED_USER_LOCALES
+from src.parser.academic_year import enrollment_year
+from src.parser.models import DaySchedule, Lecture
+from src.utils.logger import get_logger
 
 logger = get_logger("database")
 
@@ -29,8 +29,8 @@ def get_db_connection() -> Iterator[sqlite3.Connection]:
 
 def register_user_if_not_exists(
     chat_id: int, 
-    username: Optional[str] = None, 
-    first_name: Optional[str] = None
+    username: str | None = None, 
+    first_name: str | None = None
 ) -> None:
     
     """
@@ -69,7 +69,7 @@ def set_user_locale(chat_id: int, locale: str) -> None:
         )
 
 
-def get_user_group(chat_id: int) -> Optional[Dict[str, Any]]:
+def get_user_group(chat_id: int) -> dict[str, Any] | None:
     """Fetches the group details for a given user."""
     with get_db_connection() as conn:
         row = conn.execute("""
@@ -91,7 +91,7 @@ def set_user_group(chat_id: int, group_id: int) -> None:
         """, (chat_id, group_id))
 
 
-def get_user_schedule_context(chat_id: int) -> Optional[Dict[str, Any]]:
+def get_user_schedule_context(chat_id: int) -> dict[str, Any] | None:
     """
     Fetches user group and active sheet ID
     If only sheet ID is missing, returns values and None for sheet_id
@@ -116,8 +116,31 @@ def get_user_schedule_context(chat_id: int) -> Optional[Dict[str, Any]]:
         row = cursor.fetchone()
         return dict(row) if row else None
 
+    
+def get_group_by_id(group_id: int) -> dict[str, Any] | None:
+    """Fetch a group's study form and enrollment metadata by its database ID."""
+    with get_db_connection() as conn:
+        row = conn.execute(
+            "SELECT id, group_name, study_form, enrollment_year FROM groups WHERE id = ?",
+            (group_id,),
+        ).fetchone()
+        return dict(row) if row else None
 
-def get_group_by_form_and_year(study_form: str, enrollment_year: int) -> Optional[Dict[str, Any]]:
+
+def get_group_by_name(group_name: str) -> dict[str, Any] | None:
+    """Retrieves group details by group code/name (case-insensitive)."""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, group_name, study_form, enrollment_year
+            FROM groups 
+            WHERE UPPER(group_name) = UPPER(?)
+        """, (group_name.strip(),))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+
+def get_group_by_form_and_year(study_form: str, enrollment_year: int) -> dict[str, Any] | None:
     """Fetches group ID and details using study_form and enrollment_year."""
     with get_db_connection() as conn:
         cursor = conn.cursor()
@@ -130,17 +153,20 @@ def get_group_by_form_and_year(study_form: str, enrollment_year: int) -> Optiona
         return dict(row) if row else None
 
 
-def get_group_by_id(group_id: int) -> Optional[Dict[str, Any]]:
-    """Fetch a group's study form and enrollment metadata by its database ID."""
+def get_group_by_form_year_and_major(study_form: str, enrollment_year: int, major: str) -> dict[str, Any] | None:
+    """Fetches group ID and details using study_form, enrollment_year, and major."""
     with get_db_connection() as conn:
-        row = conn.execute(
-            "SELECT id, group_name, study_form, enrollment_year FROM groups WHERE id = ?",
-            (group_id,),
-        ).fetchone()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, group_name, study_form, enrollment_year, major
+            FROM groups 
+            WHERE UPPER(study_form) = UPPER(?) AND enrollment_year = ? AND UPPER(major) = UPPER(?)
+        """, (study_form.strip(), enrollment_year, major.strip()))
+        row = cursor.fetchone()
         return dict(row) if row else None
 
 
-def get_users_for_group(group_id: int) -> List[Dict[str, Any]]:
+def get_users_for_group(group_id: int) -> list[dict[str, Any]]:
     """List registered users and access state for an academic group."""
     with get_db_connection() as conn:
         rows = conn.execute(
@@ -185,7 +211,7 @@ def set_user_banned(chat_id: int, banned: bool) -> bool:
         return cursor.rowcount > 0
 
 
-def get_active_sheets_for_watcher() -> List[Dict[str, Any]]:
+def get_active_sheets_for_watcher() -> list[dict[str, Any]]:
     """Returns all active spreadsheets and their group details for background polling."""
     with get_db_connection() as conn:
         cursor = conn.cursor()
@@ -214,7 +240,7 @@ def update_spreadsheet_hash(spreadsheet_db_id: int, new_hash: str) -> None:
         """, (new_hash, spreadsheet_db_id))
 
 
-def get_schedule_cache_state(sheet_id: str) -> Optional[Dict[str, Any]]:
+def get_schedule_cache_state(sheet_id: str) -> dict[str, Any] | None:
     """Returns the snapshot version currently represented in the schedule tables."""
     with get_db_connection() as conn:
         row = conn.execute(
@@ -235,11 +261,11 @@ def replace_schedule_for_sheet(
     snapshot_path: str,
     content_hash: str,
     academic_year: int,
-    lectures: List[Lecture],
+    lectures: list[Lecture],
 ) -> int:
     """Atomically replace a spreadsheet's parsed rows and its cache marker."""
     with get_db_connection() as conn:
-        group_ids: Dict[tuple[str, int], Optional[int]] = {}
+        group_ids: dict[tuple[str, int], int | None] = {}
         rows = []
         unmapped_lectures = []
         for lecture in lectures:
@@ -313,7 +339,7 @@ def get_schedule_for_group(
     group_id: int,
     target_date: date | datetime,
     fetch_full_week: bool = False,
-) -> List[DaySchedule]:
+) -> list[DaySchedule]:
     """Read one day or week of schedule models from SQLite for a selected group."""
     requested_date = target_date.date() if isinstance(target_date, datetime) else target_date
     if fetch_full_week:
@@ -336,7 +362,7 @@ def get_schedule_for_group(
             (group_id, start_date.isoformat(), end_date.isoformat()),
         ).fetchall()
 
-    lectures_by_date: Dict[date, List[Lecture]] = {}
+    lectures_by_date: dict[date, list[Lecture]] = {}
     for row in rows:
         lecture_date = date.fromisoformat(row["lecture_date"])
         lectures_by_date.setdefault(lecture_date, []).append(
@@ -365,7 +391,7 @@ def get_schedule_for_group(
     ]
 
 
-def get_group_subscribers(group_id: int) -> List[int]:
+def get_group_subscribers(group_id: int) -> list[int]:
     """Retrieves eligible notification recipients for a group."""
     with get_db_connection() as conn:
         cursor = conn.cursor()
@@ -387,7 +413,7 @@ def enqueue_schedule_notifications(
     content_hash: str,
     group_id: int,
     group_name: str,
-    chat_ids: List[int],
+    chat_ids: list[int],
 ) -> None:
     """Persist one pending notification per eligible recipient."""
     with get_db_connection() as conn:
@@ -408,7 +434,25 @@ def enqueue_schedule_notifications(
         )
 
 
-def get_pending_schedule_notifications(sheet_id: str, content_hash: str) -> List[Dict[str, Any]]:
+def has_pending_schedule_notifications(sheet_id: str, content_hash: str) -> bool:
+    with get_db_connection() as conn:
+        row = conn.execute(
+            """
+            SELECT 1
+            FROM pending_notifications
+            WHERE notification_type = 'schedule_change'
+              AND notification_key = ?
+              AND sheet_id = ?
+              AND content_hash = ?
+              AND delivered_at IS NULL
+            LIMIT 1
+            """,
+            (content_hash, sheet_id, content_hash),
+        ).fetchone()
+        return row is not None
+
+
+def get_pending_schedule_notifications(sheet_id: str, content_hash: str) -> list[dict[str, Any]]:
     """Return undelivered notifications for one spreadsheet version."""
     with get_db_connection() as conn:
         rows = conn.execute(
@@ -435,25 +479,7 @@ def mark_schedule_notification_delivered(notification_id: int) -> None:
         )
 
 
-def has_pending_schedule_notifications(sheet_id: str, content_hash: str) -> bool:
-    with get_db_connection() as conn:
-        row = conn.execute(
-            """
-            SELECT 1
-            FROM pending_notifications
-            WHERE notification_type = 'schedule_change'
-              AND notification_key = ?
-              AND sheet_id = ?
-              AND content_hash = ?
-              AND delivered_at IS NULL
-            LIMIT 1
-            """,
-            (content_hash, sheet_id, content_hash),
-        ).fetchone()
-        return row is not None
-
-
-def get_subscribers_by_file(group_id_or_file_id: int) -> List[int]:
+def get_subscribers_by_file(group_id_or_file_id: int) -> list[int]:
     """
     Fetches chat_ids for all users belonging to the group associated with this group/sheet ID.
     """
@@ -465,19 +491,6 @@ def get_subscribers_by_file(group_id_or_file_id: int) -> List[int]:
                OR group_id = (SELECT group_id FROM spreadsheets WHERE id = ?)
         """, (group_id_or_file_id, group_id_or_file_id))
         return [row["chat_id"] for row in cursor.fetchall()]
-
-
-def get_group_by_name(group_name: str) -> Optional[Dict[str, Any]]:
-    """Retrieves group details by group code/name (case-insensitive)."""
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT id, group_name, study_form, enrollment_year
-            FROM groups 
-            WHERE UPPER(group_name) = UPPER(?)
-        """, (group_name.strip(),))
-        row = cursor.fetchone()
-        return dict(row) if row else None
 
 
 def set_group_spreadsheet(group_id: int, sheet_id: str) -> None:
@@ -533,7 +546,7 @@ def detach_group_spreadsheet(group_id: int) -> bool:
         return cursor.rowcount > 0
 
 
-def get_pending_submission(submission_id: int) -> Optional[Dict[str, Any]]:
+def get_pending_submission(submission_id: int) -> dict[str, Any] | None:
     """Fetches a pending submission by its ID."""
     with get_db_connection() as conn:
         row = conn.execute(
@@ -554,6 +567,7 @@ def create_pending_submission(group_id: int, group_name: str, sheet_id: str, use
             (group_id, group_name, sheet_id, user_chat_id),
         )
         return cursor.lastrowid
+
 
 def delete_pending_submission(submission_id: int) -> bool:
     """Deletes a pending submission by its ID."""
