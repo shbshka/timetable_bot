@@ -126,3 +126,43 @@ def test_pending_schedule_notifications_are_idempotent_and_track_delivery() -> N
 
     repository.mark_schedule_notification_delivered(remaining[0]["id"])
     assert not repository.has_pending_schedule_notifications("sheet", "hash")
+
+
+def test_pending_notifications_support_multiple_types_for_one_user() -> None:
+    repository.enqueue_schedule_notifications("sheet", "hash", 1, "24HR", [1])
+    with repository.get_db_connection() as connection:
+        connection.execute(
+            """
+            INSERT INTO pending_notifications (
+                notification_type, notification_key, sheet_id, content_hash,
+                group_id, group_name, chat_id, scheduled_for
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "lecture_reminder",
+                "lecture:42:2026-10-06T08:30",
+                "sheet",
+                "hash",
+                1,
+                "24HR",
+                1,
+                "2026-10-06 08:25:00",
+            ),
+        )
+
+    with repository.get_db_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT notification_type, notification_key, scheduled_for
+            FROM pending_notifications
+            WHERE chat_id = 1
+            ORDER BY notification_type
+            """
+        ).fetchall()
+
+    assert [(row["notification_type"], row["notification_key"]) for row in rows] == [
+        ("lecture_reminder", "lecture:42:2026-10-06T08:30"),
+        ("schedule_change", "hash"),
+    ]
+    assert rows[0]["scheduled_for"] == "2026-10-06 08:25:00"
