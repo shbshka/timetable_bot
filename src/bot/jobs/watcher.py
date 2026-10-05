@@ -4,9 +4,13 @@ from telegram.ext import ContextTypes
 from src.services.snapshot_cleanup import cleanup_old_schedule_snapshots
 from src.services.google_sheets import fetch_sheet_data_with_sa
 from src.db.repository import (
+    enqueue_schedule_notifications,
     get_active_sheets_for_watcher,
     get_group_subscribers,
+    get_pending_schedule_notifications,
     get_schedule_cache_state,
+    has_pending_schedule_notifications,
+    mark_schedule_notification_delivered,
     update_spreadsheet_hash,
 )
 from src.parser.schedule_parser import refresh_schedule_cache_from_latest_snapshot, schedule_grid_hash
@@ -100,15 +104,43 @@ async def check_sheet_updates_job(context: ContextTypes.DEFAULT_TYPE) -> None:
 
             for link in links:
                 previous_hash = link.get("last_hash")
-                update_spreadsheet_hash(link["spreadsheet_db_id"], cache_state["content_hash"])
                 if not refreshed or not previous_hash or previous_hash == cache_state["content_hash"]:
-                    continue
+                        continue
 
-                for chat_id in get_group_subscribers(link["group_id"]):
+                enqueue_schedule_notifications(
+                        sheet_id=sheet_id,
+                        content_hash=cache_state["content_hash"],
+                        group_id=link["group_id"],
+                        group_name=link["group_name"],
+                        chat_ids=get_group_subscribers(link["group_id"]),
+                )
+
+            pending = get_pending_schedule_notifications(sheet_id, cache_state["content_hash"])
+            for notification in pending:
+                try:
+                        chat_id = notification["chat_id"]
                         await context.bot.send_message(
                             chat_id=chat_id,
-                            text=get_user_msg(chat_id, "schedule.updated", group_name=link["group_name"], date_str=datetime.now().strftime("%d.%m.%Y")),
+                            text=get_user_msg(
+                                chat_id,
+                                "schedule.updated",
+                                group_name=notification["group_name"],
+                                date_str=datetime.now().strftime("%d.%m.%Y"),
+                            ),
                             parse_mode="HTML",
                         )
+                        mark_schedule_notification_delivered(notification["id"])
+                except Exception as e:
+                        logger.warning(
+                            "Schedule update notification %s failed for chat %s: %s",
+                            notification["id"],
+                            notification["chat_id"],
+                            e,
+                            exc_info=True,
+                        )
+
+            if not has_pending_schedule_notifications(sheet_id, cache_state["content_hash"]):
+                for link in links:
+                        update_spreadsheet_hash(link["spreadsheet_db_id"], cache_state["content_hash"])
         except Exception as e:
             logger.error(f"Schedule refresh failed for spreadsheet '{sheet_id}': {e}", exc_info=True)

@@ -366,11 +366,77 @@ def get_schedule_for_group(
 
 
 def get_group_subscribers(group_id: int) -> List[int]:
-    """Retrieves chat_ids for all users registered to a given group."""
+    """Retrieves eligible notification recipients for a group."""
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT chat_id FROM users WHERE group_id = ?", (group_id,))
+        cursor.execute(
+            """
+            SELECT chat_id
+            FROM users
+            WHERE group_id = ?
+              AND is_banned = 0
+              AND notifications_enabled = 1
+            """,
+            (group_id,),
+        )
         return [row["chat_id"] for row in cursor.fetchall()]
+
+
+def enqueue_schedule_notifications(
+    sheet_id: str,
+    content_hash: str,
+    group_id: int,
+    group_name: str,
+    chat_ids: List[int],
+) -> None:
+    """Persist one pending notification per eligible recipient."""
+    with get_db_connection() as conn:
+        conn.executemany(
+            """
+            INSERT INTO pending_notifications
+                (sheet_id, content_hash, group_id, group_name, chat_id)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(sheet_id, content_hash, group_id, chat_id) DO NOTHING
+            """,
+            [(sheet_id, content_hash, group_id, group_name, chat_id) for chat_id in chat_ids],
+        )
+
+
+def get_pending_schedule_notifications(sheet_id: str, content_hash: str) -> List[Dict[str, Any]]:
+    """Return undelivered notifications for one spreadsheet version."""
+    with get_db_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT id, group_name, chat_id
+            FROM pending_notifications
+            WHERE sheet_id = ? AND content_hash = ? AND delivered_at IS NULL
+            ORDER BY id
+            """,
+            (sheet_id, content_hash),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+
+def mark_schedule_notification_delivered(notification_id: int) -> None:
+    with get_db_connection() as conn:
+        conn.execute(
+            "UPDATE pending_notifications SET delivered_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (notification_id,),
+        )
+
+
+def has_pending_schedule_notifications(sheet_id: str, content_hash: str) -> bool:
+    with get_db_connection() as conn:
+        row = conn.execute(
+            """
+            SELECT 1
+            FROM pending_notifications
+            WHERE sheet_id = ? AND content_hash = ? AND delivered_at IS NULL
+            LIMIT 1
+            """,
+            (sheet_id, content_hash),
+        ).fetchone()
+        return row is not None
 
 
 def get_subscribers_by_file(group_id_or_file_id: int) -> List[int]:

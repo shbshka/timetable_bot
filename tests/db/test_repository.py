@@ -95,3 +95,34 @@ def test_user_profile_preserves_locale_group_and_schedule_context(tmp_path, monk
     assert context["study_form"] == "HR"
     assert context["sheet_id"] is None
     assert "Unsupported locale" in str(invalid_locale.value)
+
+
+def test_group_subscribers_exclude_banned_and_disabled_users() -> None:
+    with repository.get_db_connection() as connection:
+        connection.executemany(
+            """
+            INSERT INTO users (chat_id, group_id, is_banned, notifications_enabled)
+            VALUES (?, ?, ?, ?)
+            """,
+            [(1, 1, 0, 1), (2, 1, 1, 1), (3, 1, 0, 0)],
+        )
+
+    assert repository.get_group_subscribers(1) == [1]
+
+
+def test_pending_schedule_notifications_are_idempotent_and_track_delivery() -> None:
+    repository.enqueue_schedule_notifications("sheet", "hash", 1, "24HR", [1, 2])
+    repository.enqueue_schedule_notifications("sheet", "hash", 1, "24HR", [1, 2])
+
+    pending = repository.get_pending_schedule_notifications("sheet", "hash")
+    assert [item["chat_id"] for item in pending] == [1, 2]
+    assert repository.has_pending_schedule_notifications("sheet", "hash")
+
+    repository.mark_schedule_notification_delivered(pending[0]["id"])
+
+    remaining = repository.get_pending_schedule_notifications("sheet", "hash")
+    assert [item["chat_id"] for item in remaining] == [2]
+    assert repository.has_pending_schedule_notifications("sheet", "hash")
+
+    repository.mark_schedule_notification_delivered(remaining[0]["id"])
+    assert not repository.has_pending_schedule_notifications("sheet", "hash")

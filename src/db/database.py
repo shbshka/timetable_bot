@@ -112,11 +112,27 @@ def init_db(db_path: Path = DB_PATH) -> None:
         user_chat_id INTEGER NOT NULL
     );
 
-    -- 7. Performance Indexes
+    -- 7. Schedule update notification delivery
+    CREATE TABLE IF NOT EXISTS pending_notifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sheet_id TEXT NOT NULL,
+        content_hash TEXT NOT NULL,
+        group_id INTEGER NOT NULL,
+        group_name TEXT NOT NULL,
+        chat_id INTEGER NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        delivered_at TIMESTAMP,
+
+        UNIQUE(sheet_id, content_hash, group_id, chat_id)
+    );
+
+    -- 8. Performance Indexes
     CREATE INDEX IF NOT EXISTS idx_spreadsheets_group ON spreadsheets(group_id);
     CREATE INDEX IF NOT EXISTS idx_users_group ON users(group_id, notifications_enabled);
     CREATE INDEX IF NOT EXISTS idx_schedule_group_date ON schedule_lectures(group_id, lecture_date);
     CREATE INDEX IF NOT EXISTS idx_schedule_sheet ON schedule_lectures(sheet_id);
+    CREATE INDEX IF NOT EXISTS idx_pending_notifications_delivery
+        ON pending_notifications(sheet_id, content_hash, delivered_at);
     """
 
     try:

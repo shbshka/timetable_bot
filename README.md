@@ -66,6 +66,10 @@ All settings are read from environment variables or `.env`. Relative filesystem 
 
 Snapshot retention runs both after a successful snapshot write and as a scheduled cleanup job. Snapshot JSON and database files are local runtime data and are ignored by Git.
 
+Schedule-update notifications are sent only to users who are not banned and whose
+`notifications_enabled` database flag is enabled. The flag defaults to enabled, but
+there is currently no user-facing command to change it.
+
 ## Bot Commands
 
 ### Users
