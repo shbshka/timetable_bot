@@ -394,11 +394,17 @@ def enqueue_schedule_notifications(
         conn.executemany(
             """
             INSERT INTO pending_notifications
-                (sheet_id, content_hash, group_id, group_name, chat_id)
-            VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT(sheet_id, content_hash, group_id, chat_id) DO NOTHING
+                (
+                    notification_type, notification_key, sheet_id, content_hash,
+                    group_id, group_name, chat_id
+                )
+            VALUES ('schedule_change', ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(notification_type, notification_key, chat_id) DO NOTHING
             """,
-            [(sheet_id, content_hash, group_id, group_name, chat_id) for chat_id in chat_ids],
+            [
+                (content_hash, sheet_id, content_hash, group_id, group_name, chat_id)
+                for chat_id in chat_ids
+            ],
         )
 
 
@@ -409,10 +415,14 @@ def get_pending_schedule_notifications(sheet_id: str, content_hash: str) -> List
             """
             SELECT id, group_name, chat_id
             FROM pending_notifications
-            WHERE sheet_id = ? AND content_hash = ? AND delivered_at IS NULL
+            WHERE notification_type = 'schedule_change'
+              AND notification_key = ?
+              AND sheet_id = ?
+              AND content_hash = ?
+              AND delivered_at IS NULL
             ORDER BY id
             """,
-            (sheet_id, content_hash),
+            (content_hash, sheet_id, content_hash),
         ).fetchall()
         return [dict(row) for row in rows]
 
@@ -431,10 +441,14 @@ def has_pending_schedule_notifications(sheet_id: str, content_hash: str) -> bool
             """
             SELECT 1
             FROM pending_notifications
-            WHERE sheet_id = ? AND content_hash = ? AND delivered_at IS NULL
+            WHERE notification_type = 'schedule_change'
+              AND notification_key = ?
+              AND sheet_id = ?
+              AND content_hash = ?
+              AND delivered_at IS NULL
             LIMIT 1
             """,
-            (sheet_id, content_hash),
+            (content_hash, sheet_id, content_hash),
         ).fetchone()
         return row is not None
 

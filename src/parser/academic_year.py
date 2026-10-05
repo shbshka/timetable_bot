@@ -3,10 +3,11 @@
 from datetime import date
 from typing import Optional
 
+from src.utils.time import institution_today
 
 def academic_start_year(reference_date: Optional[date] = None) -> int:
     """Return the first calendar year of the academic year containing a date."""
-    value = reference_date or date.today()
+    value = reference_date or institution_today()
     return value.year if value.month >= 7 else value.year - 1
 
 

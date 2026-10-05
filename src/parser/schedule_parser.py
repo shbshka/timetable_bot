@@ -18,6 +18,7 @@ from src.parser.registry import parse_with_first_successful_parser
 from src.services.google_sheets import fetch_sheet_data_with_sa
 from src.services.snapshot_paths import snapshot_directory
 from src.utils.logger import get_logger
+from src.utils.time import institution_now
 
 logger = get_logger("parser")
 
@@ -111,7 +112,7 @@ def get_cached_schedule(
         logger.debug("Using current schedule cache for spreadsheet '%s'.", sheet_id)
     return read_group_schedule(
         group_id=group_id,
-        target_date=target_date or datetime.now(),
+        target_date=target_date or institution_now(),
         fetch_full_week=fetch_full_week,
     )
 

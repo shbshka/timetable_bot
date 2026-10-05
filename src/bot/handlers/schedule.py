@@ -9,6 +9,7 @@ from src.services.admin_notifier import forward_message_to_admin, notify_admin_o
 from src.bot.keyboards.schedule import daily_schedule_keyboard, weekly_schedule_keyboard
 from src.utils.formatter import format_daily_schedule, format_weekly_schedule
 from src.utils.logger import get_logger
+from src.utils.time import institution_now
 
 logger = get_logger("bot")
 from src.utils.messages import get_user_msg
@@ -143,12 +144,12 @@ async def render_daily_schedule(update: Update, context: ContextTypes.DEFAULT_TY
 
 async def today_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handles the /today command."""
-    await render_daily_schedule(update, context, datetime.now())
+    await render_daily_schedule(update, context, institution_now())
 
 
 async def tomorrow_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handles the /tomorrow command."""
-    await render_daily_schedule(update, context, datetime.now() + timedelta(days=1))
+    await render_daily_schedule(update, context, institution_now() + timedelta(days=1))
 
 
 async def render_weekly_schedule(
@@ -211,7 +212,7 @@ async def render_weekly_schedule(
 
 async def week_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handles the /week command."""
-    await render_weekly_schedule(update, context, datetime.now())
+    await render_weekly_schedule(update, context, institution_now())
 
 
 async def handle_schedule_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -222,11 +223,11 @@ async def handle_schedule_callbacks(update: Update, context: ContextTypes.DEFAUL
     action = query.data
 
     if action == "cmd_today":
-        await render_daily_schedule(update, context, datetime.now())
+        await render_daily_schedule(update, context, institution_now())
     elif action == "cmd_tomorrow":
-        await render_daily_schedule(update, context, datetime.now() + timedelta(days=1))
+        await render_daily_schedule(update, context, institution_now() + timedelta(days=1))
     elif action == "cmd_week":
-        await render_weekly_schedule(update, context, datetime.now())
+        await render_weekly_schedule(update, context, institution_now())
     elif action.startswith("cmd_week:"):
         date_str = action.split(":", 1)[1]
         try:

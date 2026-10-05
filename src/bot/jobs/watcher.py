@@ -19,6 +19,7 @@ from src.utils.logger import get_logger
 
 logger = get_logger("jobs")
 from src.utils.messages import get_user_msg
+from src.utils.time import institution_now
 
 
 async def cleanup_schedule_snapshots_job(context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -125,7 +126,7 @@ async def check_sheet_updates_job(context: ContextTypes.DEFAULT_TYPE) -> None:
                                 chat_id,
                                 "schedule.updated",
                                 group_name=notification["group_name"],
-                                date_str=datetime.now().strftime("%d.%m.%Y"),
+                                date_str=institution_now().strftime("%d.%m.%Y"),
                             ),
                             parse_mode="HTML",
                         )

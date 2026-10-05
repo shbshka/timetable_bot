@@ -8,6 +8,7 @@ from config import STUDY_FORMS
 from src.parser.academic_year import academic_start_year
 from src.parser.interface import ParsedSchedule, ScheduleGrid
 from src.parser.models import DaySchedule, Lecture
+from src.utils.time import institution_today
 
 _DATE_RE = re.compile(r"(?<!\d)(\d{1,2})/(\d{1,2})(?:/(\d{2,4}))?")
 _TIME_RE = re.compile(r"(?<!\d)([01]?\d|2[0-3]):([0-5]\d)(?!\d)")
@@ -118,7 +119,7 @@ def parse_schedule_grid(
     fetch_full_week: bool = False,
 ) -> ParsedSchedule:
     lectures = parse_all_schedule_grid(grid)
-    requested_date = target_date.date() if target_date else datetime.now().date()
+    requested_date = target_date.date() if target_date else institution_today()
     if fetch_full_week:
         start_date = requested_date - timedelta(days=requested_date.weekday())
         dates = [start_date + timedelta(days=offset) for offset in range(7)]
