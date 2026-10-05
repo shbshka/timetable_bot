@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import json
 import os
@@ -74,7 +75,8 @@ async def fetch_sheet_data_with_sa(
     :return: 2D list of dicts: [{'value': '4', 'note': '18:30-20:00'}, ...]
     """
     try:
-        token = get_access_token()
+        loop = asyncio.get_running_loop()
+        token = await loop.run_in_executor(None, get_access_token)
     except Exception as e:
         logger.error(f"Service account authentication error: {e}")
         return None
