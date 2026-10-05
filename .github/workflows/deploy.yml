@@ -1,9 +1,8 @@
 name: Workflow to Deploy Timetable Bot to Azure App Service
 
 on:
-  push:
-    branches:
-      - main
+  release:
+    types: [published]
 
 jobs:
   test:
