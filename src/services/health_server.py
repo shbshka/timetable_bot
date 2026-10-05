@@ -36,9 +36,12 @@ class _HealthHandler(BaseHTTPRequestHandler):
         return
 
 
-def start_health_server() -> ThreadingHTTPServer:
+def start_health_server(
+    host: str = HEALTH_HOST,
+    port: int = HEALTH_PORT,
+) -> ThreadingHTTPServer:
     """Start the health endpoint without blocking Telegram polling."""
-    server = ThreadingHTTPServer((HEALTH_HOST, HEALTH_PORT), _HealthHandler)
+    server = ThreadingHTTPServer((host, port), _HealthHandler)
     Thread(target=server.serve_forever, name="health-server", daemon=True).start()
-    logger.info("Health server listening on %s:%d.", HEALTH_HOST, HEALTH_PORT)
+    logger.info("Health server listening on %s:%d.", host, server.server_port)
     return server
