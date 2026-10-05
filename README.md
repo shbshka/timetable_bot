@@ -61,6 +61,7 @@ All settings are read from environment variables or `.env`. Relative filesystem 
 | `SNAPSHOT_CLEANUP_INTERVAL_SECONDS` | `86400` | Periodic cleanup interval |
 | `CHECK_INTERVAL_SECONDS` | `43200` | Schedule-change watcher interval |
 | `SCHEDULE_PARSER` | `awful_uni_grid` | Compatibility/default parser name; timetable ingestion uses the registered parser chain with `awful_uni_grid` last |
+| `INSTITUTION_TIMEZONE` | `UTC` | IANA timezone used for timetable dates, today/tomorrow, academic-year boundaries, and notification dates |
 | `ENVIRONMENT` | `dev` | Selects default log level |
 | `LOG_LEVEL` | derived from environment | Python log level |
 
