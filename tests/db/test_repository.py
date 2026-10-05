@@ -95,3 +95,74 @@ def test_user_profile_preserves_locale_group_and_schedule_context(tmp_path, monk
     assert context["study_form"] == "HR"
     assert context["sheet_id"] is None
     assert "Unsupported locale" in str(invalid_locale.value)
+
+
+def test_group_subscribers_exclude_banned_and_disabled_users() -> None:
+    with repository.get_db_connection() as connection:
+        connection.executemany(
+            """
+            INSERT INTO users (chat_id, group_id, is_banned, notifications_enabled)
+            VALUES (?, ?, ?, ?)
+            """,
+            [(1, 1, 0, 1), (2, 1, 1, 1), (3, 1, 0, 0)],
+        )
+
+    assert repository.get_group_subscribers(1) == [1]
+
+
+def test_pending_schedule_notifications_are_idempotent_and_track_delivery() -> None:
+    repository.enqueue_schedule_notifications("sheet", "hash", 1, "24HR", [1, 2])
+    repository.enqueue_schedule_notifications("sheet", "hash", 1, "24HR", [1, 2])
+
+    pending = repository.get_pending_schedule_notifications("sheet", "hash")
+    assert [item["chat_id"] for item in pending] == [1, 2]
+    assert repository.has_pending_schedule_notifications("sheet", "hash")
+
+    repository.mark_schedule_notification_delivered(pending[0]["id"])
+
+    remaining = repository.get_pending_schedule_notifications("sheet", "hash")
+    assert [item["chat_id"] for item in remaining] == [2]
+    assert repository.has_pending_schedule_notifications("sheet", "hash")
+
+    repository.mark_schedule_notification_delivered(remaining[0]["id"])
+    assert not repository.has_pending_schedule_notifications("sheet", "hash")
+
+
+def test_pending_notifications_support_multiple_types_for_one_user() -> None:
+    repository.enqueue_schedule_notifications("sheet", "hash", 1, "24HR", [1])
+    with repository.get_db_connection() as connection:
+        connection.execute(
+            """
+            INSERT INTO pending_notifications (
+                notification_type, notification_key, sheet_id, content_hash,
+                group_id, group_name, chat_id, scheduled_for
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "lecture_reminder",
+                "lecture:42:2026-10-06T08:30",
+                "sheet",
+                "hash",
+                1,
+                "24HR",
+                1,
+                "2026-10-06 08:25:00",
+            ),
+        )
+
+    with repository.get_db_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT notification_type, notification_key, scheduled_for
+            FROM pending_notifications
+            WHERE chat_id = 1
+            ORDER BY notification_type
+            """
+        ).fetchall()
+
+    assert [(row["notification_type"], row["notification_key"]) for row in rows] == [
+        ("lecture_reminder", "lecture:42:2026-10-06T08:30"),
+        ("schedule_change", "hash"),
+    ]
+    assert rows[0]["scheduled_for"] == "2026-10-06 08:25:00"

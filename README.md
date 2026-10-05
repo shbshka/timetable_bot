@@ -61,10 +61,15 @@ All settings are read from environment variables or `.env`. Relative filesystem 
 | `SNAPSHOT_CLEANUP_INTERVAL_SECONDS` | `86400` | Periodic cleanup interval |
 | `CHECK_INTERVAL_SECONDS` | `43200` | Schedule-change watcher interval |
 | `SCHEDULE_PARSER` | `awful_uni_grid` | Compatibility/default parser name; timetable ingestion uses the registered parser chain with `awful_uni_grid` last |
+| `INSTITUTION_TIMEZONE` | `UTC` | IANA timezone used for timetable dates, today/tomorrow, academic-year boundaries, and notification dates |
 | `ENVIRONMENT` | `dev` | Selects default log level |
 | `LOG_LEVEL` | derived from environment | Python log level |
 
 Snapshot retention runs both after a successful snapshot write and as a scheduled cleanup job. Snapshot JSON and database files are local runtime data and are ignored by Git.
+
+Schedule-update notifications are sent only to users who are not banned and whose
+`notifications_enabled` database flag is enabled. The flag defaults to enabled, but
+there is currently no user-facing command to change it.
 
 ## Bot Commands
 

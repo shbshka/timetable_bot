@@ -5,6 +5,7 @@ from typing import Dict, List, Optional
 from src.parser.interface import ParsedSchedule, ScheduleGrid
 from src.parser.academic_year import academic_start_year
 from src.parser.models import DaySchedule, Lecture
+from src.utils.time import institution_today
 
 _WEEK_HEADER_RE = re.compile(r"W\d+", re.IGNORECASE)
 _TIME_RE = re.compile(r"(?<!\d)([01]?\d|2[0-3])[.:]([0-5]\d)(?!\d)")
@@ -168,7 +169,7 @@ def parse_schedule_grid(
         return []
 
     if fetch_full_week:
-        anchor_date = target_date.date() if target_date else datetime.now().date()
+        anchor_date = target_date.date() if target_date else institution_today()
         week_start = anchor_date - timedelta(days=anchor_date.weekday())
         return [
             DaySchedule(
@@ -181,7 +182,7 @@ def parse_schedule_grid(
             for offset in range(7)
         ]
 
-    requested_date = target_date.date() if target_date else datetime.now().date()
+    requested_date = target_date.date() if target_date else institution_today()
     return [
         DaySchedule(
             date=requested_date,

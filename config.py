@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -19,6 +20,11 @@ SNAPSHOTS_DIR = _configured_path("SCHEDULE_SNAPSHOTS_DIR", PROJECT_ROOT / "sched
 MAX_SCHEDULE_SNAPSHOTS = int(os.getenv("MAX_SCHEDULE_SNAPSHOTS", "25"))
 SNAPSHOT_CLEANUP_INTERVAL_SECONDS = int(os.getenv("SNAPSHOT_CLEANUP_INTERVAL_SECONDS", "86400"))
 SCHEDULE_PARSER = os.getenv("SCHEDULE_PARSER", "awful_uni_grid").strip().lower()
+_timezone_name = os.getenv("INSTITUTION_TIMEZONE", "Europe/Vilnius").strip()
+try:
+	INSTITUTION_TIMEZONE = ZoneInfo(_timezone_name)
+except ZoneInfoNotFoundError as exc:
+	raise ValueError(f"Unknown INSTITUTION_TIMEZONE: {_timezone_name}") from exc
 
 STUDY_FORMS = {"HR", "HRO", "LR"}
 YEARS = {1, 2, 3, 4, 5}

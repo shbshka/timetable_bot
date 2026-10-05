@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from src.utils.messages import get_user_msg
+from src.utils.time import institution_now
 
 
 def daily_schedule_keyboard(chat_id: int, target_date: datetime) -> InlineKeyboardMarkup:
@@ -39,7 +40,8 @@ def weekly_schedule_keyboard(chat_id: int, target_date: datetime) -> InlineKeybo
     week_start = target_date - timedelta(days=target_date.weekday())
     previous_week = week_start - timedelta(days=7)
     next_week = week_start + timedelta(days=7)
-    current_week = datetime.now() - timedelta(days=datetime.now().weekday())
+    current_time = institution_now()
+    current_week = current_time - timedelta(days=current_time.weekday())
     return InlineKeyboardMarkup(
         [
             [

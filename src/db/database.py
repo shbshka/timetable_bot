@@ -112,11 +112,30 @@ def init_db(db_path: Path = DB_PATH) -> None:
         user_chat_id INTEGER NOT NULL
     );
 
-    -- 7. Performance Indexes
+    -- 7. Per-user notification delivery queue
+    CREATE TABLE IF NOT EXISTS pending_notifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        notification_type TEXT NOT NULL DEFAULT 'schedule_change',
+        notification_key TEXT NOT NULL,
+        sheet_id TEXT NOT NULL,
+        content_hash TEXT NOT NULL,
+        group_id INTEGER NOT NULL,
+        group_name TEXT NOT NULL,
+        chat_id INTEGER NOT NULL,
+        scheduled_for TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        delivered_at TIMESTAMP,
+
+        UNIQUE(notification_type, notification_key, chat_id)
+    );
+
+    -- 8. Performance Indexes
     CREATE INDEX IF NOT EXISTS idx_spreadsheets_group ON spreadsheets(group_id);
     CREATE INDEX IF NOT EXISTS idx_users_group ON users(group_id, notifications_enabled);
     CREATE INDEX IF NOT EXISTS idx_schedule_group_date ON schedule_lectures(group_id, lecture_date);
     CREATE INDEX IF NOT EXISTS idx_schedule_sheet ON schedule_lectures(sheet_id);
+    CREATE INDEX IF NOT EXISTS idx_pending_notifications_delivery
+        ON pending_notifications(sheet_id, content_hash, delivered_at);
     """
 
     try:
@@ -124,7 +143,9 @@ def init_db(db_path: Path = DB_PATH) -> None:
             conn.executescript(create_tables_script)
 
             user_columns = {row["name"] for row in conn.execute("PRAGMA table_info(users)")}
-            pending_columns = {row["name"] for row in conn.execute("PRAGMA table_info(pending_submissions)")}
+            pending_notification_columns = {
+                row["name"] for row in conn.execute("PRAGMA table_info(pending_notifications)")
+            }
 
             for column_name, column_type in (
                 ("username", "TEXT"),
@@ -134,6 +155,74 @@ def init_db(db_path: Path = DB_PATH) -> None:
             ):
                 if column_name not in user_columns:
                     conn.execute(f"ALTER TABLE users ADD COLUMN {column_name} {column_type}")
+
+            if "notification_type" not in pending_notification_columns:
+                conn.execute(
+                    """
+                    ALTER TABLE pending_notifications
+                    ADD COLUMN notification_type TEXT NOT NULL DEFAULT 'schedule_change'
+                    """
+                )
+                conn.execute(
+                    """
+                    ALTER TABLE pending_notifications
+                    ADD COLUMN notification_key TEXT NOT NULL DEFAULT ''
+                    """
+                )
+                conn.execute(
+                    """
+                    ALTER TABLE pending_notifications
+                    ADD COLUMN scheduled_for TIMESTAMP
+                    """
+                )
+                conn.execute(
+                    """
+                    UPDATE pending_notifications
+                    SET notification_key = content_hash
+                    WHERE notification_key = ''
+                    """
+                )
+
+                conn.execute("DROP INDEX IF EXISTS idx_pending_notifications_delivery")
+                conn.execute("ALTER TABLE pending_notifications RENAME TO pending_notifications_legacy")
+                conn.execute(
+                    """
+                    CREATE TABLE pending_notifications (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        notification_type TEXT NOT NULL DEFAULT 'schedule_change',
+                        notification_key TEXT NOT NULL,
+                        sheet_id TEXT NOT NULL,
+                        content_hash TEXT NOT NULL,
+                        group_id INTEGER NOT NULL,
+                        group_name TEXT NOT NULL,
+                        chat_id INTEGER NOT NULL,
+                        scheduled_for TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        delivered_at TIMESTAMP,
+                        UNIQUE(notification_type, notification_key, chat_id)
+                    )
+                    """
+                )
+                conn.execute(
+                    """
+                    INSERT INTO pending_notifications (
+                        id, notification_type, notification_key, sheet_id, content_hash,
+                        group_id, group_name, chat_id, scheduled_for, created_at, delivered_at
+                    )
+                    SELECT
+                        id, notification_type, notification_key, sheet_id, content_hash,
+                        group_id, group_name, chat_id, scheduled_for, created_at, delivered_at
+                    FROM pending_notifications_legacy
+                    """
+                )
+                conn.execute("DROP TABLE pending_notifications_legacy")
+
+            conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_pending_notifications_delivery
+                    ON pending_notifications(notification_type, notification_key, delivered_at)
+                """
+            )
             logger.info(f"Database initialized successfully at '{db_path}'.")
     except sqlite3.Error as e:
         logger.error(f"Failed to initialize database: {e}", exc_info=True)
