@@ -57,7 +57,10 @@ async def handle_sheet_approval_callback(update: Update, context: ContextTypes.D
 
     submission = get_pending_submission(submission_id)
     if not submission:
-        await get_user_msg(admin_chat_id, "admin.sheet.errors.submission_not_found")
+        await query.answer(
+            get_user_msg(admin_chat_id, "admin.sheet.errors.submission_not_found"),
+            show_alert=True,
+        )
         return
 
     group_id = submission["group_id"]
@@ -131,17 +134,20 @@ async def handle_sheet_rejection_callback(update: Update, context: ContextTypes.
         return
 
     submission_id = int(parts[1])
+    admin_chat_id = update.effective_user.id
 
     submission = get_pending_submission(submission_id)
     if not submission:
-        await get_user_msg(admin_chat_id, "admin.sheet.errors.submission_not_found")
+        await query.answer(
+            get_user_msg(admin_chat_id, "admin.sheet.errors.submission_not_found"),
+            show_alert=True,
+        )
         return
 
     group_id = submission["group_id"]
     group_name = submission["group_name"]
     sheet_id = submission["sheet_id"]
     user_chat_id = submission["user_chat_id"]
-    admin_chat_id = update.effective_user.id
 
     logger.info(f"Admin {update.effective_user.id} rejected Sheet '{sheet_id}' for Group {group_id}")
 
