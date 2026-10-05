@@ -1,6 +1,8 @@
 import sys
+
 from config import TELEGRAM_BOT_TOKEN
 from src.bot.app import create_bot_app
+from src.services.health_server import start_health_server
 from src.utils.logger import get_logger
 
 logger = get_logger("app")
@@ -15,6 +17,8 @@ def main() -> None:
     logger.info("Starting University Timetable Bot...")
 
     try:
+        health_server = start_health_server()
+
         # Build and configure bot application
         app = create_bot_app()
 
@@ -27,6 +31,10 @@ def main() -> None:
     except Exception as e:
         logger.critical(f"Fatal error encountered during startup: {e}", exc_info=True)
         sys.exit(1)
+    finally:
+        if "health_server" in locals():
+            health_server.shutdown()
+            health_server.server_close()
 
 
 if __name__ == "__main__":

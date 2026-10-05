@@ -41,6 +41,8 @@ docker compose up -d
 
 `docker-compose.yml` runs the bot without HTTP ingress, passes credentials through environment variables, and stores SQLite data, snapshots, and logs in named volumes. Do not put production secrets in the Compose file or image; provide `TELEGRAM_BOT_TOKEN`, `ADMIN_ID`, and `SERVICE_ACCOUNT_BASE64` through the deployment secret store.
 
+The bot also starts a minimal health endpoint on `0.0.0.0:8000` while Telegram polling is active. Azure App Service deployments should configure the app's health check to use `/` on port `8000`; the endpoint returns HTTP 200 with `ok`.
+
 For Azure Container Apps, push the image to Azure Container Registry and create the worker without ingress, or use the Compose manifest with the Azure Container Apps Compose command supported by your Azure CLI extension. Mount Azure Files at `/app/data` and `/app/logs` when persistence across container revisions is required; otherwise SQLite, snapshots, and file logs are ephemeral. Container console logs remain available through ACA diagnostics.
 
 ## Configuration
