@@ -1,0 +1,144 @@
+Table groups {
+    id integer [primary key]
+    study_form text [not null]
+    enrollment_year integer [not null]
+    group_name text [not null]
+
+    checks {
+        `enrollment_year >= 2000 AND enrollment_year <= 2100`
+    }
+
+    indexes {
+        (study_form, enrollment_year) [unique]
+    }
+}
+
+Table spreadsheets {
+    sheet_id text [primary key]
+    academic_starting_year integer [not null]
+    last_hash text
+    updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+
+    checks {
+        `sheet_id != ''`
+        `academic_starting_year >= 2000 AND academic_starting_year <= 2100`
+    }
+}
+
+Table spreadsheets_groups {
+    id integer [primary key]
+    sheet_id text [not null]
+    group_id integer [not null]
+    is_active boolean [not null, default: `true`]
+    attached_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+
+    checks {
+        `is_active IN (0, 1)`
+    }
+
+    indexes {
+        (sheet_id, group_id, is_active) [unique]
+    }
+}
+Ref: spreadsheets_groups.sheet_id > spreadsheets.sheet_id [delete: cascade, update: no action]
+Ref: spreadsheets_groups.group_id > groups.id [delete: cascade, update: no action]
+
+Table lectures {
+    id integer [primary key]
+    source_id text [not null]
+    group_id integer [not null]
+    lecture_date text [not null]
+    lecture_time text
+    subject text [not null]
+    room text
+    teacher text
+    duration_academic_hours real
+    delivery_mode text
+    course_notes text
+    cell_note text
+
+    checks {
+        `subject != ''`
+        `duration_academic_hours IS NULL OR duration_academic_hours >= 0`
+    }
+}
+Ref: lectures.source_id > spreadsheets.sheet_id [delete: cascade, update: no action]
+Ref: lectures.group_id > groups.id [delete: cascade, update: no action]
+
+Table users {
+    chat_id integer [primary key]
+    group_id integer [null]
+    username text
+    name text
+    locale text [not null, default: 'ru']
+    is_banned boolean [not null, default: `false`]
+    created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+
+    checks {
+        `locale IN ('ru', 'en')`
+        `is_banned IN (0, 1)`
+    }
+
+    indexes {
+        group_id
+    }
+}
+Ref: users.group_id > groups.id [delete: set null]
+
+Table notification_preferences {
+    id integer [primary key]
+    type text [not null]
+    recipient_id integer [not null]
+    is_enabled boolean [not null, default: `true`]
+
+    checks {
+        `type != ''`
+        `is_enabled IN (0, 1)`
+    }
+
+    indexes {
+        (recipient_id, type) [unique]
+    }
+}
+Ref: notification_preferences.recipient_id > users.chat_id [delete: cascade, update: no action]
+
+Table notification_status {
+    id integer [primary key]
+    status text [not null, unique]
+}
+
+Table notifications_queue {
+    id integer [primary key]
+    notification_id integer [not null]
+    scheduled_for timestamp [not null]
+    status_id integer [not null]
+    status_updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+
+    indexes {
+        (notification_id, scheduled_for) [unique]
+    }
+}
+Ref: notifications_queue.notification_id > notification_preferences.id [delete: cascade, update: no action]
+Ref: notifications_queue.status_id > notification_status.id [delete: restrict, update: no action]
+
+Table pending_spreadsheets {
+    id integer [primary key]
+    sender_id integer [not null]
+    target_group_id integer [not null]
+    submitted_spreadsheet_id text [not null]
+    submission_time timestamp [not null, default: `CURRENT_TIMESTAMP`]
+
+    checks {
+        `submitted_spreadsheet_id != ''`
+    }
+}
+Ref: pending_spreadsheets.sender_id > users.chat_id [delete: cascade, update: no action]
+Ref: pending_spreadsheets.target_group_id > groups.id [delete: cascade, update: no action]
+
+Table spreadsheets_cache {
+    sheet_id text [primary key]
+    snapshot_path text [not null]
+    content_hash text [not null]
+    loaded_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+Ref: spreadsheets_cache.sheet_id > spreadsheets.sheet_id [delete: cascade, update: no action]

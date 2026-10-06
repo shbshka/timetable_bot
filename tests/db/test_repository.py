@@ -3,6 +3,7 @@ from datetime import date
 import pytest
 
 from src.db import database, repository
+from src.db.migrate import run_migrations
 from src.parser.academic_year import academic_start_year, enrollment_year
 from src.parser.models import Lecture
 
@@ -10,7 +11,7 @@ from src.parser.models import Lecture
 def test_schedule_cache_maps_course_year_to_enrollment_group(tmp_path, monkeypatch) -> None:
     # Arrange
     db_path = tmp_path / "timetable.db"
-    database.init_db(db_path)
+    run_migrations(db_path)
     database.populate_db(db_path)
     monkeypatch.setattr(repository, "DB_PATH", db_path)
     academic_year = academic_start_year(date.today())
@@ -46,7 +47,7 @@ def test_schedule_cache_maps_course_year_to_enrollment_group(tmp_path, monkeypat
 def test_schedule_cache_rejects_a_lecture_without_group_level(tmp_path, monkeypatch) -> None:
     # Arrange
     db_path = tmp_path / "timetable.db"
-    database.init_db(db_path)
+    run_migrations(db_path)
     database.populate_db(db_path)
     monkeypatch.setattr(repository, "DB_PATH", db_path)
     lecture = Lecture(
@@ -75,7 +76,7 @@ def test_schedule_cache_rejects_a_lecture_without_group_level(tmp_path, monkeypa
 def test_user_profile_preserves_locale_group_and_schedule_context(tmp_path, monkeypatch) -> None:
     # Arrange
     db_path = tmp_path / "timetable.db"
-    database.init_db(db_path)
+    run_migrations(db_path)
     database.populate_db(db_path)
     monkeypatch.setattr(repository, "DB_PATH", db_path)
     repository.register_user_if_not_exists(42, username="student", first_name="Student")
