@@ -19,6 +19,7 @@ from src.bot.jobs.watcher import (
     refresh_schedules_on_startup,
 )
 from src.db.database import init_db, populate_db
+from src.db.migrate import run_migrations
 from src.utils.logger import get_logger
 
 logger = get_logger("app")
@@ -30,7 +31,8 @@ def create_bot_app() -> Application:
     registers all Telegram handlers, and schedules background jobs.
     """
     logger.info("Initializing database schema...")
-    init_db()
+
+    run_migrations()
     populate_db()
 
 
