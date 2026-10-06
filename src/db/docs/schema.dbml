@@ -1,0 +1,100 @@
+Table groups {
+    id integer [pk, increment]
+    study_form text [not null]
+    enrollment_year integer [not null]
+    group_name text [note: "GENERATED ALWAYS AS (PRINTF('%02d', enrollment_year % 100) || study_form) STORED"]
+
+    indexes {
+        (study_form, enrollment_year) [unique]
+    }
+}
+
+Table spreadsheets {
+    id integer [pk, increment]
+    sheet_id text [not null]
+    group_id integer [not null]
+    is_active integer [default: 1]
+    last_hash text
+    updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+
+    indexes {
+        group_id [name: 'idx_spreadsheets_group']
+    }
+}
+
+Table users {
+    chat_id integer [pk]
+    group_id integer
+    username text
+    first_name text
+    is_banned integer [not null, default: 0]
+    locale text [not null, default: 'ru']
+    notifications_enabled integer [default: 1]
+    created_at timestamp [default: `CURRENT_TIMESTAMP`]
+
+    indexes {
+        (group_id, notifications_enabled) [name: 'idx_users_group']
+    }
+}
+
+Table schedule_lectures {
+    id integer [pk, increment]
+    sheet_id text [not null]
+    group_id integer [not null]
+    lecture_date text [not null]
+    time text
+    subject text [not null]
+    room text
+    teacher text
+    form text
+    hours real
+    course_year integer
+    level text
+    delivery_mode text
+    course_notes text
+    cell_note text
+
+    indexes {
+        (group_id, lecture_date) [name: 'idx_schedule_group_date']
+        sheet_id [name: 'idx_schedule_sheet']
+    }
+}
+
+Table schedule_cache {
+    sheet_id text [pk]
+    snapshot_path text [not null]
+    content_hash text [not null]
+    academic_year integer [not null]
+    loaded_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+
+Table pending_submissions {
+    id integer [pk, increment]
+    group_id integer [not null]
+    group_name text [not null]
+    sheet_id text [not null]
+    user_chat_id integer [not null]
+}
+
+Table pending_notifications {
+    id integer [pk, increment]
+    notification_type text [not null, default: 'schedule_change']
+    notification_key text [not null]
+    sheet_id text [not null]
+    content_hash text [not null]
+    group_id integer [not null]
+    group_name text [not null]
+    chat_id integer [not null]
+    scheduled_for timestamp
+    created_at timestamp [default: `CURRENT_TIMESTAMP`]
+    delivered_at timestamp
+
+    indexes {
+        (notification_type, notification_key, chat_id) [unique]
+        (sheet_id, content_hash, delivered_at) [name: 'idx_pending_notifications_delivery']
+    }
+}
+
+Ref: spreadsheets.group_id > groups.id [delete: cascade, update: no action]
+Ref: users.group_id > groups.id [delete: set null, update: no action]
+Ref: schedule_lectures.group_id > groups.id [delete: cascade, update: no action]

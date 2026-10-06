@@ -18,7 +18,7 @@ from src.bot.jobs.watcher import (
     cleanup_schedule_snapshots_job,
     refresh_schedules_on_startup,
 )
-from src.db.database import init_db, populate_db
+from src.db.database import populate_db
 from src.db.migrate import run_migrations
 from src.utils.logger import get_logger
 
