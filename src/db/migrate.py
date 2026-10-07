@@ -2,8 +2,8 @@ import sqlite3
 from pathlib import Path
 
 from config import DB_PATH
-from src.utils.logger import get_logger
 from src.db.migrations import m001_initial_schema, m002_optimized_schema
+from src.utils.logger import get_logger
 
 logger = get_logger("migrations")
 

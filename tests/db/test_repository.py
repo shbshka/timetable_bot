@@ -9,7 +9,7 @@ from src.utils.time import institution_today
 
 
 def test_schedule_cache_maps_course_year_to_enrollment_group(
-    legacy_schema_database,
+    initialized_test_database,
 ) -> None:
     # Arrange
     academic_year = academic_start_year(institution_today())
@@ -20,6 +20,14 @@ def test_schedule_cache_maps_course_year_to_enrollment_group(
         course_year=2,
         level="HR",
     )
+    with repository.get_db_connection() as connection:
+        connection.execute(
+            """
+            INSERT INTO spreadsheets(sheet_id, academic_starting_year)
+            VALUES (?, ?)
+            """,
+            ("sheet-id", academic_year),
+        )
 
     # Act
     count = repository.replace_schedule_for_sheet(
@@ -32,7 +40,7 @@ def test_schedule_cache_maps_course_year_to_enrollment_group(
     state = repository.get_schedule_cache_state("sheet-id")
     with repository.get_db_connection() as connection:
         row = connection.execute(
-            "SELECT enrollment_year FROM groups WHERE id = (SELECT group_id FROM schedule_lectures WHERE sheet_id = ?)",
+            "SELECT enrollment_year FROM groups WHERE id = (SELECT group_id FROM lectures WHERE source_id = ?)",
             ("sheet-id",),
         ).fetchone()
 
@@ -43,7 +51,7 @@ def test_schedule_cache_maps_course_year_to_enrollment_group(
 
 
 def test_schedule_cache_rejects_a_lecture_without_group_level(
-    legacy_schema_database,
+    initialized_test_database,
 ) -> None:
     # Arrange
     lecture = Lecture(
@@ -70,7 +78,7 @@ def test_schedule_cache_rejects_a_lecture_without_group_level(
 
 
 def test_user_profile_preserves_locale_group_and_schedule_context(
-    legacy_schema_database,
+    initialized_test_database,
 ) -> None:
     # Arrange
     repository.register_user_if_not_exists(42, username="student", first_name="Student")
@@ -96,16 +104,25 @@ def test_group_subscribers_exclude_banned_and_disabled_users() -> None:
     with repository.get_db_connection() as connection:
         connection.executemany(
             """
-            INSERT INTO users (chat_id, group_id, is_banned, notifications_enabled)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO users (chat_id, group_id, is_banned)
+            VALUES (?, ?, ?)
             """,
-            [(1, 1, 0, 1), (2, 1, 1, 1), (3, 1, 0, 0)],
+            [(1, 1, 0), (2, 1, 1), (3, 1, 0)],
+        )
+        connection.executemany(
+            """
+            INSERT INTO notification_preferences (type, recipient_id, is_enabled)
+            VALUES ('schedule_change', ?, ?)
+            """,
+            [(1, 1), (2, 1), (3, 0)],
         )
 
     assert repository.get_group_subscribers(1) == [1]
 
 
 def test_pending_schedule_notifications_are_idempotent_and_track_delivery() -> None:
+    repository.register_user_if_not_exists(1)
+    repository.register_user_if_not_exists(2)
     repository.enqueue_schedule_notifications("sheet", "hash", 1, "24HR", [1, 2])
     repository.enqueue_schedule_notifications("sheet", "hash", 1, "24HR", [1, 2])
 
@@ -124,40 +141,40 @@ def test_pending_schedule_notifications_are_idempotent_and_track_delivery() -> N
 
 
 def test_pending_notifications_support_multiple_types_for_one_user() -> None:
+    repository.register_user_if_not_exists(1)
     repository.enqueue_schedule_notifications("sheet", "hash", 1, "24HR", [1])
     with repository.get_db_connection() as connection:
         connection.execute(
             """
-            INSERT INTO pending_notifications (
-                notification_type, notification_key, sheet_id, content_hash,
-                group_id, group_name, chat_id, scheduled_for
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO notification_preferences (type, recipient_id)
+            VALUES (?, ?)
             """,
-            (
-                "lecture_reminder",
-                "lecture:42:2026-10-06T08:30",
-                "sheet",
-                "hash",
-                1,
-                "24HR",
-                1,
-                "2026-10-06 08:25:00",
-            ),
+            ("lecture_reminder", 1),
+        )
+        preference = connection.execute(
+            "SELECT id FROM notification_preferences WHERE type = 'lecture_reminder'"
+        ).fetchone()
+        connection.execute(
+            """
+            INSERT INTO notifications_queue(notification_id, scheduled_for, status_id)
+            VALUES (?, '2026-10-06 08:25:00', 1)
+            """,
+            (preference["id"],),
         )
 
     with repository.get_db_connection() as connection:
         rows = connection.execute(
             """
-            SELECT notification_type, notification_key, scheduled_for
-            FROM pending_notifications
-            WHERE chat_id = 1
-            ORDER BY notification_type
+            SELECT p.type, q.scheduled_for
+            FROM notifications_queue q
+            JOIN notification_preferences p ON p.id = q.notification_id
+            WHERE p.recipient_id = 1
+            ORDER BY p.type
             """
         ).fetchall()
 
-    assert [(row["notification_type"], row["notification_key"]) for row in rows] == [
-        ("lecture_reminder", "lecture:42:2026-10-06T08:30"),
-        ("schedule_change", "hash"),
+    assert [row["type"] for row in rows] == [
+        "lecture_reminder",
+        "schedule_change:sheet:hash",
     ]
     assert rows[0]["scheduled_for"] == "2026-10-06 08:25:00"
