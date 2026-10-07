@@ -6,7 +6,7 @@ from src.db.migrate import run_migrations
 from src.db.migrations.base import Migration
 from src.db.migrations.m001_initial_schema import (
     BASELINE_TABLES,
-    REQUIRED_COLUMNS,
+    InitialSchemaMigration,
 )
 
 
@@ -106,7 +106,7 @@ def test_base_helpers_validate_keys_indexes_and_quoting() -> None:
     )
 
 
-def test_initial_migration_applies_to_an_isolated_database(tmp_path) -> None:
+def test_migrations_apply_to_an_isolated_database(tmp_path) -> None:
     # Arrange
     database_path = tmp_path / "isolated.db"
 
@@ -117,12 +117,15 @@ def test_initial_migration_applies_to_an_isolated_database(tmp_path) -> None:
     connection = sqlite3.connect(database_path)
     assert connection.execute(
         "SELECT version, name FROM schema_migrations"
-    ).fetchall() == [(1, "initial_schema")]
-    for table, columns in REQUIRED_COLUMNS.items():
-        assert Migration.get_columns(connection, table) == set(columns)
+    ).fetchall() == [(1, "initial_schema"), (2, "optimized_schema")]
+    assert Migration.get_columns(connection, "groups") == {
+        "id", "study_form", "enrollment_year", "group_name"
+    }
+    assert "spreadsheets_groups" in Migration.get_table_names(connection)
+    assert "notifications_queue" in Migration.get_table_names(connection)
 
 
-def test_initial_migration_is_idempotent_on_an_isolated_database(tmp_path) -> None:
+def test_migrations_are_idempotent_on_an_isolated_database(tmp_path) -> None:
     # Arrange
     database_path = tmp_path / "isolated.db"
     run_migrations(database_path)
@@ -134,7 +137,7 @@ def test_initial_migration_is_idempotent_on_an_isolated_database(tmp_path) -> No
     connection = sqlite3.connect(database_path)
     assert connection.execute(
         "SELECT COUNT(*) FROM schema_migrations"
-    ).fetchone()[0] == 1
+    ).fetchone()[0] == 2
 
 
 def test_migration_runner_rejects_unknown_migration_history(tmp_path) -> None:
@@ -208,14 +211,17 @@ def test_initial_migration_preserves_legacy_init_db_data(tmp_path) -> None:
     # Assert
     connection = sqlite3.connect(database_path)
     assert connection.execute(
-        "SELECT username, first_name, is_banned, locale FROM users WHERE chat_id = 42"
+        "SELECT username, name, is_banned, locale FROM users WHERE chat_id = 42"
     ).fetchone() == (None, None, 0, "ru")
-    assert connection.execute(
+    notification = connection.execute(
         """
-        SELECT notification_type, notification_key, sheet_id, chat_id
-        FROM pending_notifications
+        SELECT p.type, q.status_id, q.scheduled_for
+        FROM notifications_queue q
+        JOIN notification_preferences p ON p.id = q.notification_id
         """
-    ).fetchone() == ("schedule_change", "hash", "sheet", 42)
+    ).fetchone()
+    assert notification[:2] == ("schedule_change", 1)
+    assert notification[2] is not None
     assert not connection.execute(
         "PRAGMA foreign_key_list(pending_notifications)"
     ).fetchall()
@@ -246,3 +252,116 @@ def test_initial_migration_rejects_unknown_missing_essential_column(tmp_path) ->
 
     # Assert
     assert "academic_year" in str(migration.value)
+
+
+def test_optimized_schema_migration_transfers_populated_current_schema(tmp_path) -> None:
+    # Arrange
+    database_path = tmp_path / "populated.db"
+    connection = sqlite3.connect(database_path)
+    InitialSchemaMigration().upgrade(connection)
+    connection.execute(
+        "INSERT INTO groups(study_form, enrollment_year) VALUES ('HR', 2024)"
+    )
+    group_id = connection.execute("SELECT id FROM groups").fetchone()[0]
+    connection.execute(
+        """
+        INSERT INTO users(
+            chat_id, group_id, first_name, notifications_enabled
+        ) VALUES (7, ?, 'Alice', 0)
+        """,
+        (group_id,),
+    )
+    connection.execute(
+        "INSERT INTO spreadsheets(sheet_id, group_id, last_hash) "
+        "VALUES ('sheet', ?, 'old')",
+        (group_id,),
+    )
+    connection.execute(
+        """
+        INSERT INTO schedule_cache(
+            sheet_id, snapshot_path, content_hash, academic_year
+        ) VALUES ('sheet', 'snap', 'hash', 2025)
+        """
+    )
+    connection.execute(
+        """
+        INSERT INTO schedule_lectures(
+            sheet_id, group_id, lecture_date, subject, hours
+        ) VALUES ('sheet', ?, '2026-10-07', 'Math', 2.0)
+        """,
+        (group_id,),
+    )
+    connection.execute(
+        """
+        INSERT INTO pending_notifications(
+            notification_type, notification_key, sheet_id, content_hash,
+            group_id, group_name, chat_id
+        ) VALUES ('schedule_change', 'key', 'sheet', 'hash', ?, '24HR', 7)
+        """,
+        (group_id,),
+    )
+    connection.commit()
+    connection.close()
+
+    # Act
+    run_migrations(database_path)
+
+    # Assert
+    connection = sqlite3.connect(database_path)
+    assert connection.execute(
+        "SELECT academic_starting_year, last_hash FROM spreadsheets"
+    ).fetchone() == (2025, "old")
+    assert connection.execute(
+        "SELECT name, is_banned FROM users"
+    ).fetchone() == ("Alice", 0)
+    assert connection.execute(
+        "SELECT duration_academic_hours FROM lectures"
+    ).fetchone()[0] == 2.0
+    assert connection.execute(
+        "SELECT is_enabled FROM notification_preferences WHERE recipient_id = 7"
+    ).fetchone()[0] == 0
+    assert connection.execute(
+        "SELECT COUNT(*) FROM notifications_queue"
+    ).fetchone()[0] == 1
+    assert connection.execute(
+        "SELECT COUNT(*) FROM spreadsheets_cache"
+    ).fetchone()[0] == 1
+
+
+def test_optimized_schema_migration_rolls_back_when_source_data_violates_checks(tmp_path) -> None:
+    # Arrange
+    database_path = tmp_path / "invalid.db"
+    connection = sqlite3.connect(database_path)
+    InitialSchemaMigration().upgrade(connection)
+    connection.execute(
+        "INSERT INTO groups(study_form, enrollment_year) VALUES ('HR', 2024)"
+    )
+    group_id = connection.execute("SELECT id FROM groups").fetchone()[0]
+    connection.execute(
+        "INSERT INTO spreadsheets(sheet_id, group_id) VALUES ('sheet', ?)",
+        (group_id,),
+    )
+    connection.execute(
+        """
+        INSERT INTO schedule_lectures(
+            sheet_id, group_id, lecture_date, subject
+        ) VALUES ('sheet', ?, '2026-10-07', '')
+        """,
+        (group_id,),
+    )
+    connection.commit()
+    connection.close()
+
+    # Act
+    migration = pytest.raises(ValueError, run_migrations, database_path)
+
+    # Assert
+    assert "planned checks" in str(migration.value)
+    connection = sqlite3.connect(database_path)
+    assert connection.execute(
+        "SELECT 1 FROM sqlite_master "
+        "WHERE type = 'table' AND name = 'schedule_lectures'"
+    ).fetchone()
+    assert connection.execute(
+        "SELECT 1 FROM schema_migrations WHERE version = 2"
+    ).fetchone() is None
