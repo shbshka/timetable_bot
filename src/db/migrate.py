@@ -2,7 +2,10 @@ import sqlite3
 from pathlib import Path
 
 from config import DB_PATH
+from src.utils.logger import get_logger
 from src.db.migrations import m001_initial_schema, m002_optimized_schema
+
+logger = get_logger("migrations")
 
 initial = m001_initial_schema.InitialSchemaMigration()
 optimized = m002_optimized_schema.OptimizedSchemaMigration()
@@ -34,6 +37,8 @@ def run_migrations(db_path: Path = DB_PATH) -> None:
         """)
 
         for version, name, upgrade in MIGRATIONS:
+
+            logger.info(f"Applying migration {version}: {name}...")
             conn.execute("BEGIN IMMEDIATE")
 
             try:
@@ -79,9 +84,11 @@ def run_migrations(db_path: Path = DB_PATH) -> None:
                 )
 
                 conn.commit()
+                logger.info(f"Migration {version} applied successfully.")
 
             except BaseException:
                 conn.rollback()
+                logger.error(f"Migration {version} failed. Rolled back changes.", exc_info=True)
                 raise
 
     finally:

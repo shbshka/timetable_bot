@@ -40,12 +40,20 @@ def register_user_if_not_exists(
 
     with get_db_connection() as conn:
         conn.execute("""
-            INSERT INTO users (chat_id, username, first_name)
+            INSERT INTO users (chat_id, username, name)
             VALUES (?, ?, ?)
             ON CONFLICT(chat_id) DO UPDATE SET
                 username = COALESCE(excluded.username, users.username),
-                first_name = COALESCE(excluded.first_name, users.first_name)
+                name = COALESCE(excluded.name, users.name)
         """, (chat_id, username, first_name))
+        conn.execute(
+            """
+            INSERT INTO notification_preferences (type, recipient_id)
+            VALUES ('schedule_change', ?)
+            ON CONFLICT(recipient_id, type) DO NOTHING
+            """,
+            (chat_id,),
+        )
 
 
 def get_user_locale(chat_id: int) -> str:
@@ -66,6 +74,14 @@ def set_user_locale(chat_id: int, locale: str) -> None:
             ON CONFLICT(chat_id) DO UPDATE SET locale = excluded.locale
             """,
             (chat_id, locale),
+        )
+        conn.execute(
+            """
+            INSERT INTO notification_preferences (type, recipient_id)
+            VALUES ('schedule_change', ?)
+            ON CONFLICT(recipient_id, type) DO NOTHING
+            """,
+            (chat_id,),
         )
 
 
@@ -106,11 +122,13 @@ def get_user_schedule_context(chat_id: int) -> dict[str, Any] | None:
                 g.group_name,
                 g.study_form,
                 g.enrollment_year,
-                s.id AS spreadsheet_db_id,
+                sg.id AS spreadsheet_db_id,
                 s.sheet_id
             FROM users u
             JOIN groups g ON u.group_id = g.id
-            LEFT JOIN spreadsheets s ON s.group_id = g.id AND s.is_active = 1
+            LEFT JOIN spreadsheets_groups sg
+                ON sg.group_id = g.id AND sg.is_active = 1
+            LEFT JOIN spreadsheets s ON s.sheet_id = sg.sheet_id
             WHERE u.chat_id = ?
         """, (chat_id,))
         row = cursor.fetchone()
@@ -171,10 +189,10 @@ def get_users_for_group(group_id: int) -> list[dict[str, Any]]:
     with get_db_connection() as conn:
         rows = conn.execute(
             """
-            SELECT chat_id, username, first_name, is_banned, created_at
+            SELECT chat_id, username, name AS first_name, is_banned, created_at
             FROM users
             WHERE group_id = ?
-            ORDER BY first_name COLLATE NOCASE, username COLLATE NOCASE, chat_id
+            ORDER BY name COLLATE NOCASE, username COLLATE NOCASE, chat_id
             """,
             (group_id,),
         ).fetchall()
@@ -203,6 +221,14 @@ def set_user_banned(chat_id: int, banned: bool) -> bool:
                 """,
                 (chat_id,),
             )
+            conn.execute(
+                """
+                INSERT INTO notification_preferences (type, recipient_id)
+                VALUES ('schedule_change', ?)
+                ON CONFLICT(recipient_id, type) DO NOTHING
+                """,
+                (chat_id,),
+            )
         else:
             cursor = conn.execute(
                 "UPDATE users SET is_banned = 0 WHERE chat_id = ? AND is_banned = 1",
@@ -217,15 +243,16 @@ def get_active_sheets_for_watcher() -> list[dict[str, Any]]:
         cursor = conn.cursor()
         cursor.execute("""
             SELECT 
-                s.id AS spreadsheet_db_id,
+                sg.id AS spreadsheet_db_id,
                 s.sheet_id,
                 s.last_hash,
                 g.id AS group_id,
                 g.group_name,
                 g.study_form
-            FROM spreadsheets s
-            JOIN groups g ON s.group_id = g.id
-            WHERE s.is_active = 1
+            FROM spreadsheets_groups sg
+            JOIN spreadsheets s ON s.sheet_id = sg.sheet_id
+            JOIN groups g ON sg.group_id = g.id
+            WHERE sg.is_active = 1
         """)
         return [dict(row) for row in cursor.fetchall()]
 
@@ -234,9 +261,13 @@ def update_spreadsheet_hash(spreadsheet_db_id: int, new_hash: str) -> None:
     """Updates stored hash of a spreadsheet after detected changes."""
     with get_db_connection() as conn:
         conn.execute("""
-            UPDATE spreadsheets 
-            SET last_hash = ? 
-            WHERE id = ?
+            UPDATE spreadsheets
+            SET last_hash = ?
+            WHERE sheet_id = (
+                SELECT sheet_id
+                FROM spreadsheets_groups
+                WHERE id = ?
+            )
         """, (new_hash, spreadsheet_db_id))
 
 
@@ -245,10 +276,12 @@ def get_schedule_cache_state(sheet_id: str) -> dict[str, Any] | None:
     with get_db_connection() as conn:
         row = conn.execute(
             """
-            SELECT cache.sheet_id, cache.snapshot_path, cache.content_hash, cache.academic_year,
-                   (SELECT COUNT(*) FROM schedule_lectures AS lecture
-                    WHERE lecture.sheet_id = cache.sheet_id) AS lecture_count
-            FROM schedule_cache AS cache
+            SELECT cache.sheet_id, cache.snapshot_path, cache.content_hash,
+                   s.academic_starting_year AS academic_year,
+                   (SELECT COUNT(*) FROM lectures AS lecture
+                    WHERE lecture.source_id = cache.sheet_id) AS lecture_count
+            FROM spreadsheets_cache AS cache
+            JOIN spreadsheets s ON s.sheet_id = cache.sheet_id
             WHERE cache.sheet_id = ?
             """,
             (sheet_id,),
@@ -310,27 +343,35 @@ def replace_schedule_for_sheet(
         if not rows:
             raise ValueError("Cannot cache a schedule with no lecture rows.")
 
-        conn.execute("DELETE FROM schedule_lectures WHERE sheet_id = ?", (sheet_id,))
+        conn.execute("DELETE FROM lectures WHERE source_id = ?", (sheet_id,))
         conn.executemany(
             """
-            INSERT INTO schedule_lectures (
-                sheet_id, group_id, lecture_date, time, subject, room, teacher,
-                form, hours, course_year, level, delivery_mode, course_notes, cell_note
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO lectures (
+                source_id, group_id, lecture_date, lecture_time, subject, room,
+                teacher, duration_academic_hours, delivery_mode, course_notes,
+                cell_note
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            rows,
+            [
+                (
+                    row[0], row[1], row[2], row[3], row[4], row[5], row[6],
+                    row[8], row[11], row[12], row[13],
+                )
+                for row in rows
+            ],
         )
         conn.execute(
             """
-            INSERT INTO schedule_cache (sheet_id, snapshot_path, content_hash, academic_year, loaded_at)
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            INSERT INTO spreadsheets_cache (
+                sheet_id, snapshot_path, content_hash, loaded_at
+            )
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
             ON CONFLICT(sheet_id) DO UPDATE SET
                 snapshot_path = excluded.snapshot_path,
                 content_hash = excluded.content_hash,
-                academic_year = excluded.academic_year,
                 loaded_at = CURRENT_TIMESTAMP
             """,
-            (sheet_id, snapshot_path, content_hash, academic_year),
+            (sheet_id, snapshot_path, content_hash),
         )
         return len(rows)
 
@@ -353,11 +394,11 @@ def get_schedule_for_group(
     with get_db_connection() as conn:
         rows = conn.execute(
             """
-            SELECT lecture_date, time, subject, room, teacher, form, hours,
-                   course_year, level, delivery_mode, course_notes, cell_note
-            FROM schedule_lectures
+            SELECT lecture_date, lecture_time, subject, room, teacher,
+                   duration_academic_hours, delivery_mode, course_notes, cell_note
+            FROM lectures
             WHERE group_id = ? AND lecture_date BETWEEN ? AND ?
-            ORDER BY lecture_date, time, subject
+            ORDER BY lecture_date, lecture_time, subject
             """,
             (group_id, start_date.isoformat(), end_date.isoformat()),
         ).fetchall()
@@ -368,14 +409,13 @@ def get_schedule_for_group(
         lectures_by_date.setdefault(lecture_date, []).append(
             Lecture(
                 date=lecture_date,
-                time=row["time"],
+                time=row["lecture_time"],
                 subject=row["subject"],
                 room=row["room"],
                 teacher=row["teacher"],
-                form=row["form"],
-                hours=row["hours"],
-                course_year=row["course_year"],
-                level=row["level"],
+                hours=row["duration_academic_hours"],
+                course_year=None,
+                level=None,
                 delivery_mode=row["delivery_mode"],
                 course_notes=row["course_notes"],
                 cell_note=row["cell_note"],
@@ -399,9 +439,14 @@ def get_group_subscribers(group_id: int) -> list[int]:
             """
             SELECT chat_id
             FROM users
-            WHERE group_id = ?
-              AND is_banned = 0
-              AND notifications_enabled = 1
+            WHERE group_id = ? AND is_banned = 0
+              AND EXISTS (
+                  SELECT 1
+                  FROM notification_preferences p
+                  WHERE p.recipient_id = users.chat_id
+                    AND p.type = 'schedule_change'
+                    AND p.is_enabled = 1
+              )
             """,
             (group_id,),
         )
@@ -417,21 +462,33 @@ def enqueue_schedule_notifications(
 ) -> None:
     """Persist one pending notification per eligible recipient."""
     with get_db_connection() as conn:
-        conn.executemany(
-            """
-            INSERT INTO pending_notifications
-                (
-                    notification_type, notification_key, sheet_id, content_hash,
-                    group_id, group_name, chat_id
+        for chat_id in chat_ids:
+            conn.execute(
+                """
+                INSERT INTO notification_preferences (type, recipient_id)
+                VALUES (?, ?)
+                ON CONFLICT(recipient_id, type) DO NOTHING
+                """,
+                (f"schedule_change:{sheet_id}:{content_hash}", chat_id),
+            )
+            preference = conn.execute(
+                """
+                SELECT id
+                FROM notification_preferences
+                WHERE recipient_id = ? AND type = ?
+                """,
+                (chat_id, f"schedule_change:{sheet_id}:{content_hash}"),
+            ).fetchone()
+            conn.execute(
+                """
+                INSERT INTO notifications_queue (
+                    notification_id, scheduled_for, status_id
                 )
-            VALUES ('schedule_change', ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(notification_type, notification_key, chat_id) DO NOTHING
-            """,
-            [
-                (content_hash, sheet_id, content_hash, group_id, group_name, chat_id)
-                for chat_id in chat_ids
-            ],
-        )
+                VALUES (?, CURRENT_TIMESTAMP, 1)
+                ON CONFLICT(notification_id, scheduled_for) DO NOTHING
+                """,
+                (preference["id"],),
+            )
 
 
 def has_pending_schedule_notifications(sheet_id: str, content_hash: str) -> bool:
@@ -439,15 +496,13 @@ def has_pending_schedule_notifications(sheet_id: str, content_hash: str) -> bool
         row = conn.execute(
             """
             SELECT 1
-            FROM pending_notifications
-            WHERE notification_type = 'schedule_change'
-              AND notification_key = ?
-              AND sheet_id = ?
-              AND content_hash = ?
-              AND delivered_at IS NULL
+            FROM notifications_queue q
+            JOIN notification_preferences p ON p.id = q.notification_id
+            WHERE p.type = ?
+              AND q.status_id = 1
             LIMIT 1
             """,
-            (content_hash, sheet_id, content_hash),
+            (f"schedule_change:{sheet_id}:{content_hash}",),
         ).fetchone()
         return row is not None
 
@@ -457,16 +512,16 @@ def get_pending_schedule_notifications(sheet_id: str, content_hash: str) -> list
     with get_db_connection() as conn:
         rows = conn.execute(
             """
-            SELECT id, group_name, chat_id
-            FROM pending_notifications
-            WHERE notification_type = 'schedule_change'
-              AND notification_key = ?
-              AND sheet_id = ?
-              AND content_hash = ?
-              AND delivered_at IS NULL
-            ORDER BY id
+            SELECT q.id, g.group_name, p.recipient_id AS chat_id
+            FROM notifications_queue q
+            JOIN notification_preferences p ON p.id = q.notification_id
+            JOIN users u ON u.chat_id = p.recipient_id
+            LEFT JOIN groups g ON g.id = u.group_id
+            WHERE p.type = ?
+              AND q.status_id = 1
+            ORDER BY q.id
             """,
-            (content_hash, sheet_id, content_hash),
+            (f"schedule_change:{sheet_id}:{content_hash}",),
         ).fetchall()
         return [dict(row) for row in rows]
 
@@ -474,7 +529,11 @@ def get_pending_schedule_notifications(sheet_id: str, content_hash: str) -> list
 def mark_schedule_notification_delivered(notification_id: int) -> None:
     with get_db_connection() as conn:
         conn.execute(
-            "UPDATE pending_notifications SET delivered_at = CURRENT_TIMESTAMP WHERE id = ?",
+            """
+            UPDATE notifications_queue
+            SET status_id = 2, status_updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
             (notification_id,),
         )
 
@@ -488,7 +547,11 @@ def get_subscribers_by_file(group_id_or_file_id: int) -> list[int]:
         cursor.execute("""
             SELECT chat_id FROM users 
             WHERE group_id = ? 
-               OR group_id = (SELECT group_id FROM spreadsheets WHERE id = ?)
+               OR group_id = (
+                   SELECT group_id
+                   FROM spreadsheets_groups
+                   WHERE id = ?
+               )
         """, (group_id_or_file_id, group_id_or_file_id))
         return [row["chat_id"] for row in cursor.fetchall()]
 
@@ -501,26 +564,46 @@ def set_group_spreadsheet(group_id: int, sheet_id: str) -> None:
     with get_db_connection() as conn:
         old_sheet_ids = {
             row["sheet_id"]
-            for row in conn.execute("SELECT sheet_id FROM spreadsheets WHERE group_id = ?", (group_id,))
+            for row in conn.execute(
+                "SELECT sheet_id FROM spreadsheets_groups WHERE group_id = ?",
+                (group_id,),
+            )
         }
-        conn.execute("DELETE FROM spreadsheets WHERE group_id = ?", (group_id,))
+        conn.execute(
+            "DELETE FROM spreadsheets_groups WHERE group_id = ?",
+            (group_id,),
+        )
         conn.execute("""
-            INSERT INTO spreadsheets (sheet_id, group_id, is_active, updated_at)
-            VALUES (?, ?, 1, CURRENT_TIMESTAMP)
+            INSERT INTO spreadsheets (
+                sheet_id, academic_starting_year, updated_at
+            )
+            VALUES (
+                ?,
+                (SELECT enrollment_year FROM groups WHERE id = ?),
+                CURRENT_TIMESTAMP
+            )
+            ON CONFLICT(sheet_id) DO NOTHING
         """, (sheet_id, group_id))
+        conn.execute(
+            """
+            INSERT INTO spreadsheets_groups (sheet_id, group_id, is_active)
+            VALUES (?, ?, 1)
+            """,
+            (sheet_id, group_id),
+        )
 
         for old_sheet_id in old_sheet_ids - {sheet_id}:
             conn.execute(
-                "DELETE FROM schedule_lectures WHERE group_id = ? AND sheet_id = ?",
+                "DELETE FROM lectures WHERE group_id = ? AND source_id = ?",
                 (group_id, old_sheet_id),
             )
             still_linked = conn.execute(
-                "SELECT 1 FROM spreadsheets WHERE sheet_id = ? AND is_active = 1 LIMIT 1",
+                "SELECT 1 FROM spreadsheets_groups WHERE sheet_id = ? AND is_active = 1 LIMIT 1",
                 (old_sheet_id,),
             ).fetchone()
             if not still_linked:
-                conn.execute("DELETE FROM schedule_lectures WHERE sheet_id = ?", (old_sheet_id,))
-                conn.execute("DELETE FROM schedule_cache WHERE sheet_id = ?", (old_sheet_id,))
+                conn.execute("DELETE FROM lectures WHERE source_id = ?", (old_sheet_id,))
+                conn.execute("DELETE FROM spreadsheets_cache WHERE sheet_id = ?", (old_sheet_id,))
 
 
 def detach_group_spreadsheet(group_id: int) -> bool:
@@ -528,21 +611,27 @@ def detach_group_spreadsheet(group_id: int) -> bool:
     with get_db_connection() as conn:
         sheet_ids = [
             row["sheet_id"]
-            for row in conn.execute("SELECT sheet_id FROM spreadsheets WHERE group_id = ?", (group_id,))
+            for row in conn.execute(
+                "SELECT sheet_id FROM spreadsheets_groups WHERE group_id = ?",
+                (group_id,),
+            )
         ]
-        cursor = conn.execute("DELETE FROM spreadsheets WHERE group_id = ?", (group_id,))
+        cursor = conn.execute(
+            "DELETE FROM spreadsheets_groups WHERE group_id = ?",
+            (group_id,),
+        )
         for sheet_id in set(sheet_ids):
             conn.execute(
-                "DELETE FROM schedule_lectures WHERE group_id = ? AND sheet_id = ?",
+                "DELETE FROM lectures WHERE group_id = ? AND source_id = ?",
                 (group_id, sheet_id),
             )
             still_linked = conn.execute(
-                "SELECT 1 FROM spreadsheets WHERE sheet_id = ? AND is_active = 1 LIMIT 1",
+                "SELECT 1 FROM spreadsheets_groups WHERE sheet_id = ? AND is_active = 1 LIMIT 1",
                 (sheet_id,),
             ).fetchone()
             if not still_linked:
-                conn.execute("DELETE FROM schedule_lectures WHERE sheet_id = ?", (sheet_id,))
-                conn.execute("DELETE FROM schedule_cache WHERE sheet_id = ?", (sheet_id,))
+                conn.execute("DELETE FROM lectures WHERE source_id = ?", (sheet_id,))
+                conn.execute("DELETE FROM spreadsheets_cache WHERE sheet_id = ?", (sheet_id,))
         return cursor.rowcount > 0
 
 
@@ -550,7 +639,17 @@ def get_pending_submission(submission_id: int) -> dict[str, Any] | None:
     """Fetches a pending submission by its ID."""
     with get_db_connection() as conn:
         row = conn.execute(
-            "SELECT * FROM pending_submissions WHERE id = ?",
+            """
+            SELECT p.id,
+                   p.sender_id AS user_chat_id,
+                   p.target_group_id AS group_id,
+                   g.group_name,
+                   p.submitted_spreadsheet_id AS sheet_id,
+                   p.submission_time
+            FROM pending_spreadsheets p
+            JOIN groups g ON g.id = p.target_group_id
+            WHERE p.id = ?
+            """,
             (submission_id,),
         ).fetchone()
         return dict(row) if row else None
@@ -561,10 +660,12 @@ def create_pending_submission(group_id: int, group_name: str, sheet_id: str, use
     with get_db_connection() as conn:
         cursor = conn.execute(
             """
-            INSERT INTO pending_submissions (group_id, group_name, sheet_id, user_chat_id)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO pending_spreadsheets (
+                sender_id, target_group_id, submitted_spreadsheet_id
+            )
+            VALUES (?, ?, ?)
             """,
-            (group_id, group_name, sheet_id, user_chat_id),
+            (user_chat_id, group_id, sheet_id),
         )
         return cursor.lastrowid
 
@@ -573,7 +674,7 @@ def delete_pending_submission(submission_id: int) -> bool:
     """Deletes a pending submission by its ID."""
     with get_db_connection() as conn:
         cursor = conn.execute(
-            "DELETE FROM pending_submissions WHERE id = ?",
+            "DELETE FROM pending_spreadsheets WHERE id = ?",
             (submission_id,),
         )
         return cursor.rowcount > 0

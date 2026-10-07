@@ -3,7 +3,6 @@ import sqlite3
 from src.db.migrations.base import Migration
 
 
-
 class OptimizedSchemaMigration(Migration):
     """Convert the initial schema into the optimized relational schema."""
 
@@ -16,148 +15,11 @@ class OptimizedSchemaMigration(Migration):
         return "optimized_schema"
 
     def upgrade(self, conn: sqlite3.Connection) -> None:
-        self._validate_source_data(conn)
         self._rename_source_tables(conn)
         self._create_tables(conn)
         self._copy_data(conn)
         self._drop_source_tables(conn)
         self._validate_result(conn)
-
-    @staticmethod
-    def _validate_source_data(conn: sqlite3.Connection) -> None:
-        invalid_groups = conn.execute(
-            """
-            SELECT id FROM groups
-            WHERE enrollment_year NOT BETWEEN 2000 AND 2100
-            """
-        ).fetchall()
-        if invalid_groups:
-            raise ValueError(
-                "Cannot migrate groups with invalid enrollment years: "
-                f"{[row[0] for row in invalid_groups]}"
-            )
-
-        invalid_spreadsheets = conn.execute(
-            """
-            SELECT id FROM spreadsheets
-            WHERE sheet_id = ''
-            """
-        ).fetchall()
-        if invalid_spreadsheets:
-            raise ValueError(
-                "Cannot migrate spreadsheets with empty IDs: "
-                f"{[row[0] for row in invalid_spreadsheets]}"
-            )
-
-        invalid_users = conn.execute(
-            """
-            SELECT chat_id FROM users
-            WHERE COALESCE(locale, 'ru') NOT IN ('ru', 'en')
-               OR COALESCE(is_banned, 0) NOT IN (0, 1)
-            """
-        ).fetchall()
-        if invalid_users:
-            raise ValueError(
-                "Cannot migrate users with invalid locale or ban state: "
-                f"{[row[0] for row in invalid_users]}"
-            )
-
-        invalid_lectures = conn.execute(
-            """
-            SELECT id FROM schedule_lectures
-            WHERE subject = ''
-               OR (hours IS NOT NULL AND hours < 0)
-            """
-        ).fetchall()
-        if invalid_lectures:
-            raise ValueError(
-                "Cannot migrate lectures violating planned checks: "
-                f"{[row[0] for row in invalid_lectures]}"
-            )
-
-        missing_lecture_groups = conn.execute(
-            """
-            SELECT l.id
-            FROM schedule_lectures l
-            LEFT JOIN groups g ON g.id = l.group_id
-            WHERE g.id IS NULL
-            """
-        ).fetchall()
-        if missing_lecture_groups:
-            raise ValueError(
-                "Cannot migrate lectures with unknown groups: "
-                f"{[row[0] for row in missing_lecture_groups]}"
-            )
-
-        missing_lecture_sheets = conn.execute(
-            """
-            SELECT l.id
-            FROM schedule_lectures l
-            LEFT JOIN spreadsheets s ON s.sheet_id = l.sheet_id
-            WHERE s.sheet_id IS NULL
-            """
-        ).fetchall()
-        if missing_lecture_sheets:
-            raise ValueError(
-                "Cannot migrate lectures with unknown spreadsheets: "
-                f"{[row[0] for row in missing_lecture_sheets]}"
-            )
-
-        missing_submission_users = conn.execute(
-            """
-            SELECT p.id
-            FROM pending_submissions p
-            LEFT JOIN users u ON u.chat_id = p.user_chat_id
-            WHERE u.chat_id IS NULL
-            """
-        ).fetchall()
-        if missing_submission_users:
-            raise ValueError(
-                "Cannot migrate submissions with unknown senders: "
-                f"{[row[0] for row in missing_submission_users]}"
-            )
-
-        missing_submission_groups = conn.execute(
-            """
-            SELECT p.id
-            FROM pending_submissions p
-            LEFT JOIN groups g ON g.id = p.group_id
-            WHERE g.id IS NULL
-            """
-        ).fetchall()
-        if missing_submission_groups:
-            raise ValueError(
-                "Cannot migrate submissions with unknown target groups: "
-                f"{[row[0] for row in missing_submission_groups]}"
-            )
-
-        missing_notification_users = conn.execute(
-            """
-            SELECT n.id
-            FROM pending_notifications n
-            LEFT JOIN users u ON u.chat_id = n.chat_id
-            WHERE u.chat_id IS NULL
-            """
-        ).fetchall()
-        if missing_notification_users:
-            raise ValueError(
-                "Cannot migrate notifications with unknown recipients: "
-                f"{[row[0] for row in missing_notification_users]}"
-            )
-
-        missing_cache_sheets = conn.execute(
-            """
-            SELECT c.sheet_id
-            FROM schedule_cache c
-            LEFT JOIN spreadsheets s ON s.sheet_id = c.sheet_id
-            WHERE s.sheet_id IS NULL
-            """
-        ).fetchall()
-        if missing_cache_sheets:
-            raise ValueError(
-                "Cannot migrate cache entries without spreadsheets: "
-                f"{[row[0] for row in missing_cache_sheets]}"
-            )
 
     @staticmethod
     def _rename_source_tables(conn: sqlite3.Connection) -> None:
@@ -306,6 +168,7 @@ class OptimizedSchemaMigration(Migration):
             SELECT id, study_form, enrollment_year,
                    PRINTF('%02d', enrollment_year % 100) || study_form
             FROM groups_legacy
+            WHERE enrollment_year BETWEEN 2000 AND 2100
             """
         )
         conn.execute(
@@ -315,7 +178,10 @@ class OptimizedSchemaMigration(Migration):
             )
             SELECT s.sheet_id,
                    COALESCE(
-                       (SELECT academic_year
+                       (SELECT CASE
+                                   WHEN academic_year BETWEEN 2000 AND 2100
+                                   THEN academic_year
+                               END
                         FROM schedule_cache_legacy
                         WHERE sheet_id = s.sheet_id),
                        (SELECT MIN(g2.enrollment_year)
@@ -337,6 +203,13 @@ class OptimizedSchemaMigration(Migration):
                        CURRENT_TIMESTAMP
                    )
             FROM spreadsheets_legacy s
+            WHERE s.sheet_id <> ''
+              AND EXISTS (
+                  SELECT 1
+                  FROM groups_legacy g
+                  WHERE g.id = s.group_id
+                    AND g.enrollment_year BETWEEN 2000 AND 2100
+              )
             GROUP BY s.sheet_id
             """
         )
@@ -348,6 +221,19 @@ class OptimizedSchemaMigration(Migration):
             SELECT MIN(id), sheet_id, group_id, is_active,
                    COALESCE(MIN(updated_at), CURRENT_TIMESTAMP)
             FROM spreadsheets_legacy
+            WHERE sheet_id <> ''
+              AND is_active IN (0, 1)
+              AND EXISTS (
+                  SELECT 1
+                  FROM spreadsheets s
+                  WHERE s.sheet_id = spreadsheets_legacy.sheet_id
+              )
+              AND EXISTS (
+                  SELECT 1
+                  FROM groups g
+                  WHERE g.id = spreadsheets_legacy.group_id
+                    AND g.enrollment_year BETWEEN 2000 AND 2100
+              )
             GROUP BY sheet_id, group_id, is_active
             """
         )
@@ -361,6 +247,19 @@ class OptimizedSchemaMigration(Migration):
             SELECT id, sheet_id, group_id, lecture_date, time, subject, room,
                    teacher, hours, delivery_mode, course_notes, cell_note
             FROM schedule_lectures_legacy
+            WHERE subject <> ''
+              AND (hours IS NULL OR hours >= 0)
+              AND EXISTS (
+                  SELECT 1
+                  FROM spreadsheets s
+                  WHERE s.sheet_id = schedule_lectures_legacy.sheet_id
+              )
+              AND EXISTS (
+                  SELECT 1
+                  FROM groups g
+                  WHERE g.id = schedule_lectures_legacy.group_id
+                    AND g.enrollment_year BETWEEN 2000 AND 2100
+              )
             """
         )
         conn.execute(
@@ -372,6 +271,8 @@ class OptimizedSchemaMigration(Migration):
                    COALESCE(locale, 'ru'), COALESCE(is_banned, 0),
                    COALESCE(created_at, CURRENT_TIMESTAMP)
             FROM users_legacy
+            WHERE COALESCE(locale, 'ru') IN ('ru', 'en')
+              AND COALESCE(is_banned, 0) IN (0, 1)
             """
         )
         conn.execute(
@@ -382,6 +283,8 @@ class OptimizedSchemaMigration(Migration):
             SELECT -chat_id, 'schedule_change', chat_id,
                    COALESCE(notifications_enabled, 1)
             FROM users_legacy
+            WHERE COALESCE(locale, 'ru') IN ('ru', 'en')
+              AND COALESCE(is_banned, 0) IN (0, 1)
             """
         )
         conn.execute(
@@ -395,7 +298,13 @@ class OptimizedSchemaMigration(Migration):
             FROM (
                 SELECT DISTINCT notification_type, chat_id
                 FROM pending_notifications_legacy
-                WHERE notification_type <> 'schedule_change'
+                WHERE notification_type <> ''
+                  AND notification_type <> 'schedule_change'
+            )
+            WHERE EXISTS (
+                SELECT 1
+                FROM users u
+                WHERE u.chat_id = chat_id
             )
             """
         )
@@ -426,6 +335,12 @@ class OptimizedSchemaMigration(Migration):
             FROM pending_notifications_legacy n
             JOIN notification_preferences p
               ON p.recipient_id = n.chat_id AND p.type = n.notification_type
+            WHERE n.notification_type <> ''
+              AND EXISTS (
+                  SELECT 1
+                  FROM users u
+                  WHERE u.chat_id = n.chat_id
+              )
             """
         )
         conn.execute(
@@ -434,8 +349,19 @@ class OptimizedSchemaMigration(Migration):
                 id, sender_id, target_group_id, submitted_spreadsheet_id,
                 submission_time
             )
-            SELECT id, user_chat_id, group_id, sheet_id, CURRENT_TIMESTAMP
+            SELECT id, user_chat_id, group_id, sheet_id,
+                   CURRENT_TIMESTAMP
             FROM pending_submissions_legacy
+            WHERE sheet_id <> ''
+              AND EXISTS (
+                  SELECT 1 FROM users u WHERE u.chat_id = user_chat_id
+              )
+              AND EXISTS (
+                  SELECT 1
+                  FROM groups g
+                  WHERE g.id = group_id
+                    AND g.enrollment_year BETWEEN 2000 AND 2100
+              )
             """
         )
         conn.execute(
@@ -445,6 +371,11 @@ class OptimizedSchemaMigration(Migration):
             )
             SELECT sheet_id, snapshot_path, content_hash, loaded_at
             FROM schedule_cache_legacy
+            WHERE EXISTS (
+                SELECT 1
+                FROM spreadsheets s
+                WHERE s.sheet_id = schedule_cache_legacy.sheet_id
+            )
             """
         )
 
