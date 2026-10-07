@@ -10,44 +10,146 @@
       {
         "name": "groups",
         "schemaName": "public",
-        "x": 2.202250976562496,
-        "y": -338.8767099609375
-      },
-      {
-        "name": "pending_notifications",
-        "schemaName": "public",
-        "x": 3.989116210937496,
-        "y": -144.89847753906255
-      },
-      {
-        "name": "users",
-        "schemaName": "public",
-        "x": 484.1975859375,
-        "y": -127.08837890624994
+        "x": 17.620159182448788,
+        "y": 557.1110019462834
       },
       {
         "name": "spreadsheets",
         "schemaName": "public",
-        "x": 489.4486738281249,
-        "y": -385.0388369140624
+        "x": 14.44287109375,
+        "y": 37.90384162240389
       },
       {
-        "name": "schedule_lectures",
+        "name": "spreadsheets_groups",
         "schemaName": "public",
-        "x": 37.22983886718748,
-        "y": 260.6661708984376
+        "x": 18.847454104323788,
+        "y": 263.8953876960122
+      },
+      {
+        "name": "lectures",
+        "schemaName": "public",
+        "x": -309.22609619179116,
+        "y": 229.0906680900389
+      },
+      {
+        "name": "users",
+        "schemaName": "public",
+        "x": 408.7395648055889,
+        "y": 37.90384162240389
+      },
+      {
+        "name": "notifications",
+        "schemaName": "public",
+        "x": 126.76693762494045,
+        "y": -195.3515413767438
+      },
+      {
+        "name": "notification_status",
+        "schemaName": "public",
+        "x": 822.4682501462213,
+        "y": -131.3515413767438
+      },
+      {
+        "name": "notifications_queue",
+        "schemaName": "public",
+        "x": 450.41407305306564,
+        "y": -227.3515413767438
+      },
+      {
+        "name": "pending_spreadsheets",
+        "schemaName": "public",
+        "x": 723.6890405178733,
+        "y": 364.55598271792377
       },
       {
         "name": "schedule_cache",
         "schemaName": "public",
-        "x": 532.6350546875001,
-        "y": 409.8033741698265
+        "x": -324.4973269647632,
+        "y": -195.3515413767438
       },
       {
-        "name": "pending_submissions",
+        "name": "teachers",
         "schemaName": "public",
-        "x": 531.1052695312501,
-        "y": 183.4689541015627
+        "x": -324.4973269647632,
+        "y": 767.1110019462834
+      },
+      {
+        "name": "s_cache",
+        "schemaName": "public",
+        "x": -309.22609619179116,
+        "y": 767.1110019462834
+      },
+      {
+        "name": "sp_cache",
+        "schemaName": "public",
+        "x": -309.22609619179116,
+        "y": 767.1110019462834
+      },
+      {
+        "name": "spr_cache",
+        "schemaName": "public",
+        "x": -309.22609619179116,
+        "y": 767.1110019462834
+      },
+      {
+        "name": "spre_cache",
+        "schemaName": "public",
+        "x": -309.22609619179116,
+        "y": 767.1110019462834
+      },
+      {
+        "name": "sprea_cache",
+        "schemaName": "public",
+        "x": -309.22609619179116,
+        "y": 767.1110019462834
+      },
+      {
+        "name": "spread_cache",
+        "schemaName": "public",
+        "x": -309.22609619179116,
+        "y": 767.1110019462834
+      },
+      {
+        "name": "spreads_cache",
+        "schemaName": "public",
+        "x": -309.22609619179116,
+        "y": 767.1110019462834
+      },
+      {
+        "name": "spreadsh_cache",
+        "schemaName": "public",
+        "x": -309.22609619179116,
+        "y": 767.1110019462834
+      },
+      {
+        "name": "spreadshe_cache",
+        "schemaName": "public",
+        "x": -309.22609619179116,
+        "y": 767.1110019462834
+      },
+      {
+        "name": "spreadshee_cache",
+        "schemaName": "public",
+        "x": -309.22609619179116,
+        "y": 767.1110019462834
+      },
+      {
+        "name": "spreadsheet_cache",
+        "schemaName": "public",
+        "x": -309.22609619179116,
+        "y": 767.1110019462834
+      },
+      {
+        "name": "spreadsheets_cache",
+        "schemaName": "public",
+        "x": -309.22609619179116,
+        "y": 767.1110019462834
+      },
+      {
+        "name": "notification_preferences",
+        "schemaName": "public",
+        "x": -309.22609619179116,
+        "y": 977.1110019462834
       }
     ],
     "tableGroupCollapseStates": [],
@@ -55,15 +157,15 @@
     "referencePaths": [
       {
         "firstFieldNames": [
-          "id"
+          "sheet_id"
         ],
-        "firstTableName": "groups",
+        "firstTableName": "spreadsheets",
         "firstSchemaName": "public",
         "firstRelation": "1",
         "secondFieldNames": [
-          "group_id"
+          "sheet_id"
         ],
-        "secondTableName": "schedules",
+        "secondTableName": "spreadsheets_groups",
         "secondSchemaName": "public",
         "secondRelation": "*",
         "checkPoints": []
@@ -78,7 +180,22 @@
         "secondFieldNames": [
           "group_id"
         ],
-        "secondTableName": "schedule_snapshots",
+        "secondTableName": "spreadsheets_groups",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "sheet_id"
+        ],
+        "firstTableName": "spreadsheets",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "source_id"
+        ],
+        "secondTableName": "lectures",
         "secondSchemaName": "public",
         "secondRelation": "*",
         "checkPoints": []
@@ -93,7 +210,7 @@
         "secondFieldNames": [
           "group_id"
         ],
-        "secondTableName": "spreadsheets",
+        "secondTableName": "lectures",
         "secondSchemaName": "public",
         "secondRelation": "*",
         "checkPoints": []
@@ -115,15 +232,60 @@
       },
       {
         "firstFieldNames": [
-          "id"
+          "chat_id"
         ],
-        "firstTableName": "groups",
+        "firstTableName": "users",
         "firstSchemaName": "public",
         "firstRelation": "1",
         "secondFieldNames": [
-          "group_id"
+          "recipient_id"
         ],
-        "secondTableName": "schedule_lectures",
+        "secondTableName": "notifications",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "notifications",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "notification_id"
+        ],
+        "secondTableName": "notifications_queue",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "notification_status",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "status_id"
+        ],
+        "secondTableName": "notifications_queue",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "chat_id"
+        ],
+        "firstTableName": "users",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "sender_id"
+        ],
+        "secondTableName": "pending_spreadsheets",
         "secondSchemaName": "public",
         "secondRelation": "*",
         "checkPoints": []
@@ -136,7 +298,22 @@
         "firstSchemaName": "public",
         "firstRelation": "1",
         "secondFieldNames": [
-          "group_id"
+          "target_group_id"
+        ],
+        "secondTableName": "pending_spreadsheets",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "sheet_id"
+        ],
+        "firstTableName": "spreadsheets",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "sheet_id"
         ],
         "secondTableName": "schedule_cache",
         "secondSchemaName": "public",
@@ -145,17 +322,197 @@
       },
       {
         "firstFieldNames": [
-          "id"
+          "sheet_id"
         ],
-        "firstTableName": "groups",
+        "firstTableName": "spreadsheets",
         "firstSchemaName": "public",
         "firstRelation": "1",
         "secondFieldNames": [
+          "sheet_id"
+        ],
+        "secondTableName": "s_cache",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "sheet_id"
+        ],
+        "firstTableName": "spreadsheets",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "sheet_id"
+        ],
+        "secondTableName": "sp_cache",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "sheet_id"
+        ],
+        "firstTableName": "spreadsheets",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "sheet_id"
+        ],
+        "secondTableName": "spr_cache",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "sheet_id"
+        ],
+        "firstTableName": "spreadsheets",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "sheet_id"
+        ],
+        "secondTableName": "spre_cache",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "sheet_id"
+        ],
+        "firstTableName": "spreadsheets",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "sheet_id"
+        ],
+        "secondTableName": "sprea_cache",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "sheet_id"
+        ],
+        "firstTableName": "spreadsheets",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "sheet_id"
+        ],
+        "secondTableName": "spread_cache",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "sheet_id"
+        ],
+        "firstTableName": "spreadsheets",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "sheet_id"
+        ],
+        "secondTableName": "spreads_cache",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "sheet_id"
+        ],
+        "firstTableName": "spreadsheets",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "sheet_id"
+        ],
+        "secondTableName": "spreadsh_cache",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "sheet_id"
+        ],
+        "firstTableName": "spreadsheets",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "sheet_id"
+        ],
+        "secondTableName": "spreadshe_cache",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "sheet_id"
+        ],
+        "firstTableName": "spreadsheets",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "sheet_id"
+        ],
+        "secondTableName": "spreadshee_cache",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "sheet_id"
+        ],
+        "firstTableName": "spreadsheets",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "sheet_id"
+        ],
+        "secondTableName": "spreadsheet_cache",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "sheet_id"
+        ],
+        "firstTableName": "spreadsheets",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "sheet_id"
+        ],
+        "secondTableName": "spreadsheets_cache",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
           "group_id"
         ],
-        "secondTableName": "pending_submissions",
+        "firstTableName": "users",
+        "firstSchemaName": "public",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "groups",
         "secondSchemaName": "public",
-        "secondRelation": "*",
+        "secondRelation": "1",
         "checkPoints": []
       },
       {
@@ -166,24 +523,9 @@
         "firstSchemaName": "public",
         "firstRelation": "1",
         "secondFieldNames": [
-          "user_chat_id"
+          "recipient_id"
         ],
-        "secondTableName": "pending_submissions",
-        "secondSchemaName": "public",
-        "secondRelation": "*",
-        "checkPoints": []
-      },
-      {
-        "firstFieldNames": [
-          "chat_id"
-        ],
-        "firstTableName": "users",
-        "firstSchemaName": "public",
-        "firstRelation": "1",
-        "secondFieldNames": [
-          "user_chat_id"
-        ],
-        "secondTableName": "pending_notifications",
+        "secondTableName": "notification_preferences",
         "secondSchemaName": "public",
         "secondRelation": "*",
         "checkPoints": []
@@ -192,30 +534,165 @@
         "firstFieldNames": [
           "id"
         ],
-        "firstTableName": "groups",
+        "firstTableName": "notification_preferences",
         "firstSchemaName": "public",
         "firstRelation": "1",
         "secondFieldNames": [
-          "group_id"
+          "notification_id"
         ],
-        "secondTableName": "pending_notifications",
+        "secondTableName": "notifications_queue",
         "secondSchemaName": "public",
         "secondRelation": "*",
         "checkPoints": []
       },
       {
         "firstFieldNames": [
-          "chat_id"
+          "sheet_id"
         ],
-        "firstTableName": "users",
+        "firstTableName": "spreadsheets_groups",
         "firstSchemaName": "public",
-        "firstRelation": "1",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "sheet_id"
+        ],
+        "secondTableName": "spreadsheets",
+        "secondSchemaName": "public",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "group_id"
+        ],
+        "firstTableName": "spreadsheets_groups",
+        "firstSchemaName": "public",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "groups",
+        "secondSchemaName": "public",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "source_id"
+        ],
+        "firstTableName": "lectures",
+        "firstSchemaName": "public",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "sheet_id"
+        ],
+        "secondTableName": "spreadsheets",
+        "secondSchemaName": "public",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "group_id"
+        ],
+        "firstTableName": "lectures",
+        "firstSchemaName": "public",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "groups",
+        "secondSchemaName": "public",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "recipient_id"
+        ],
+        "firstTableName": "notification_preferences",
+        "firstSchemaName": "public",
+        "firstRelation": "*",
         "secondFieldNames": [
           "chat_id"
         ],
-        "secondTableName": "pending_notifications",
+        "secondTableName": "users",
         "secondSchemaName": "public",
-        "secondRelation": "*",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "notification_id"
+        ],
+        "firstTableName": "notifications_queue",
+        "firstSchemaName": "public",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "notification_preferences",
+        "secondSchemaName": "public",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "status_id"
+        ],
+        "firstTableName": "notifications_queue",
+        "firstSchemaName": "public",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "notification_status",
+        "secondSchemaName": "public",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "sender_id"
+        ],
+        "firstTableName": "pending_spreadsheets",
+        "firstSchemaName": "public",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "chat_id"
+        ],
+        "secondTableName": "users",
+        "secondSchemaName": "public",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "target_group_id"
+        ],
+        "firstTableName": "pending_spreadsheets",
+        "firstSchemaName": "public",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "id"
+        ],
+        "secondTableName": "groups",
+        "secondSchemaName": "public",
+        "secondRelation": "1",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "sheet_id"
+        ],
+        "firstTableName": "spreadsheets_cache",
+        "firstSchemaName": "public",
+        "firstRelation": "*",
+        "secondFieldNames": [
+          "sheet_id"
+        ],
+        "secondTableName": "spreadsheets",
+        "secondSchemaName": "public",
+        "secondRelation": "1",
         "checkPoints": []
       }
     ]
