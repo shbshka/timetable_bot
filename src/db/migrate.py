@@ -2,12 +2,14 @@ import sqlite3
 from pathlib import Path
 
 from config import DB_PATH
-from src.db.migrations import m001_initial_schema
+from src.db.migrations import m001_initial_schema, m002_optimized_schema
 
 initial = m001_initial_schema.InitialSchemaMigration()
+optimized = m002_optimized_schema.OptimizedSchemaMigration()
 
 MIGRATIONS = (
     (initial.version, initial.name, initial.upgrade),
+    (optimized.version, optimized.name, optimized.upgrade),
 )
 
 def run_migrations(db_path: Path = DB_PATH) -> None:
