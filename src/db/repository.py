@@ -343,6 +343,14 @@ def replace_schedule_for_sheet(
         if not rows:
             raise ValueError("Cannot cache a schedule with no lecture rows.")
 
+        conn.execute(
+            """
+            INSERT INTO spreadsheets (sheet_id, academic_starting_year)
+            VALUES (?, ?)
+            ON CONFLICT(sheet_id) DO NOTHING
+            """,
+            (sheet_id, academic_year),
+        )
         conn.execute("DELETE FROM lectures WHERE source_id = ?", (sheet_id,))
         conn.executemany(
             """
