@@ -1,6 +1,7 @@
 import sqlite3
 
 from src.db.migrations.base import Migration
+from src.db.migrations.m001_initial_schema import BASELINE_TABLES
 
 
 class OptimizedSchemaMigration(Migration):
@@ -20,6 +21,181 @@ class OptimizedSchemaMigration(Migration):
         self._copy_data(conn)
         self._drop_source_tables(conn)
         self._validate_result(conn)
+
+    def downgrade(self, conn: sqlite3.Connection) -> None:
+        """Convert the optimized schema back to the initial schema."""
+        self._rename_optimized_tables(conn)
+        for statement in BASELINE_TABLES:
+            conn.execute(statement)
+        self._copy_data_to_initial_schema(conn)
+        self._create_initial_indexes(conn)
+        self._drop_renamed_optimized_tables(conn)
+
+    @staticmethod
+    def _rename_optimized_tables(conn: sqlite3.Connection) -> None:
+        for table in (
+            "groups",
+            "spreadsheets",
+            "spreadsheets_groups",
+            "lectures",
+            "users",
+            "notification_preferences",
+            "notification_status",
+            "notifications_queue",
+            "pending_spreadsheets",
+            "spreadsheets_cache",
+        ):
+            conn.execute(
+                f'ALTER TABLE "{table}" RENAME TO "{table}_optimized"'
+            )
+
+    @staticmethod
+    def _copy_data_to_initial_schema(conn: sqlite3.Connection) -> None:
+        conn.execute(
+            """
+            INSERT INTO groups (id, study_form, enrollment_year)
+            SELECT id, study_form, enrollment_year
+            FROM groups_optimized
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO spreadsheets (
+                id, sheet_id, group_id, is_active, last_hash, updated_at
+            )
+            SELECT sg.id, sg.sheet_id, sg.group_id, sg.is_active,
+                   s.last_hash, s.updated_at
+            FROM spreadsheets_groups_optimized sg
+            JOIN spreadsheets_optimized s ON s.sheet_id = sg.sheet_id
+            JOIN groups_optimized g ON g.id = sg.group_id
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO users (
+                chat_id, group_id, username, first_name, is_banned, locale,
+                notifications_enabled, created_at
+            )
+            SELECT u.chat_id, u.group_id, u.username, u.name, u.is_banned,
+                   u.locale,
+                   COALESCE((
+                       SELECT p.is_enabled
+                       FROM notification_preferences_optimized p
+                       WHERE p.recipient_id = u.chat_id
+                         AND p.type = 'schedule_change'
+                   ), 1),
+                   u.created_at
+            FROM users_optimized u
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO schedule_lectures (
+                id, sheet_id, group_id, lecture_date, time, subject, room,
+                teacher, delivery_mode, course_notes, cell_note
+            )
+            SELECT id, source_id, group_id, lecture_date, lecture_time, subject,
+                   room, teacher, delivery_mode, course_notes, cell_note
+            FROM lectures_optimized
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO schedule_cache (
+                sheet_id, snapshot_path, content_hash, academic_year, loaded_at
+            )
+            SELECT c.sheet_id, c.snapshot_path, c.content_hash,
+                   s.academic_starting_year, c.loaded_at
+            FROM spreadsheets_cache_optimized c
+            JOIN spreadsheets_optimized s ON s.sheet_id = c.sheet_id
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO pending_submissions (
+                id, group_id, group_name, sheet_id, user_chat_id
+            )
+            SELECT p.id, p.target_group_id, g.group_name,
+                   p.submitted_spreadsheet_id, p.sender_id
+            FROM pending_spreadsheets_optimized p
+            JOIN groups_optimized g ON g.id = p.target_group_id
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO pending_notifications (
+                id, notification_type, notification_key, sheet_id, content_hash,
+                group_id, group_name, chat_id, scheduled_for, created_at,
+                delivered_at
+            )
+            SELECT q.id, 'schedule_change',
+                   p.type || ':' || q.scheduled_for,
+                   CASE
+                       WHEN instr(p.type, ':') > 0
+                       THEN substr(p.type, 17, instr(substr(p.type, 17), ':') - 1)
+                       ELSE ''
+                   END,
+                   CASE
+                       WHEN instr(p.type, ':') > 0
+                            AND instr(substr(p.type, 17), ':') > 0
+                       THEN substr(
+                           p.type,
+                           17 + instr(substr(p.type, 17), ':')
+                       )
+                       ELSE p.type
+                   END,
+                   COALESCE(u.group_id, 0),
+                   COALESCE(g.group_name, ''),
+                   p.recipient_id,
+                   q.scheduled_for,
+                   q.status_updated_at,
+                   CASE WHEN q.status_id = 2 THEN q.status_updated_at END
+            FROM notifications_queue_optimized q
+            JOIN notification_preferences_optimized p
+              ON p.id = q.notification_id
+            JOIN users_optimized u ON u.chat_id = p.recipient_id
+            LEFT JOIN groups_optimized g ON g.id = u.group_id
+            WHERE u.group_id IS NOT NULL
+            """
+        )
+
+    @staticmethod
+    def _create_initial_indexes(conn: sqlite3.Connection) -> None:
+        Migration.recreate_index(
+            conn, "idx_spreadsheets_group", "spreadsheets", ["group_id"]
+        )
+        Migration.recreate_index(
+            conn, "idx_users_group", "users",
+            ["group_id", "notifications_enabled"],
+        )
+        Migration.recreate_index(
+            conn, "idx_schedule_group_date", "schedule_lectures",
+            ["group_id", "lecture_date"],
+        )
+        Migration.recreate_index(
+            conn, "idx_schedule_sheet", "schedule_lectures", ["sheet_id"]
+        )
+        Migration.recreate_index(
+            conn, "idx_pending_notifications_delivery",
+            "pending_notifications",
+            ["sheet_id", "content_hash", "delivered_at"],
+        )
+
+    @staticmethod
+    def _drop_renamed_optimized_tables(conn: sqlite3.Connection) -> None:
+        for table in (
+            "spreadsheets_cache_optimized",
+            "pending_spreadsheets_optimized",
+            "notifications_queue_optimized",
+            "notification_status_optimized",
+            "notification_preferences_optimized",
+            "lectures_optimized",
+            "spreadsheets_groups_optimized",
+            "users_optimized",
+            "spreadsheets_optimized",
+            "groups_optimized",
+        ):
+            conn.execute(f'DROP TABLE "{table}"')
 
     @staticmethod
     def _rename_source_tables(conn: sqlite3.Connection) -> None:

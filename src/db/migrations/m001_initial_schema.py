@@ -293,6 +293,19 @@ class InitialSchemaMigration(Migration):
             ["sheet_id", "content_hash", "delivered_at"]
         )
 
+    def downgrade(self, conn: sqlite3.Connection) -> None:
+        """Remove the baseline schema."""
+        for table in (
+            "pending_notifications",
+            "pending_submissions",
+            "schedule_cache",
+            "schedule_lectures",
+            "users",
+            "spreadsheets",
+            "groups",
+        ):
+            conn.execute(f"DROP TABLE IF EXISTS {self.quote_identifier(table)}")
+
     @staticmethod
     def _upgrade_legacy_users(conn: sqlite3.Connection) -> None:
         """Add only the user columns introduced by the legacy initializer."""

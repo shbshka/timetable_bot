@@ -19,6 +19,11 @@ class Migration(ABC):
         """Apply changes using the runner's transaction."""
 
 
+    @abstractmethod
+    def downgrade(self, conn: sqlite3.Connection) -> None:
+        """Revert changes using the runner's transaction."""
+
+
     @staticmethod
     def get_columns(
         conn: sqlite3.Connection,

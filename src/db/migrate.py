@@ -11,8 +11,8 @@ initial = m001_initial_schema.InitialSchemaMigration()
 optimized = m002_optimized_schema.OptimizedSchemaMigration()
 
 MIGRATIONS = (
-    (initial.version, initial.name, initial.upgrade),
-    (optimized.version, optimized.name, optimized.upgrade),
+    (initial.version, initial.name, initial.upgrade, initial.downgrade),
+    (optimized.version, optimized.name, optimized.upgrade, optimized.downgrade),
 )
 
 def run_migrations(db_path: Path = DB_PATH) -> None:
@@ -36,7 +36,7 @@ def run_migrations(db_path: Path = DB_PATH) -> None:
             )
         """)
 
-        for version, name, upgrade in MIGRATIONS:
+        for version, name, upgrade, _ in MIGRATIONS:
 
             logger.info(f"Applying migration {version}: {name}...")
             conn.execute("BEGIN IMMEDIATE")
@@ -50,7 +50,7 @@ def run_migrations(db_path: Path = DB_PATH) -> None:
 
                 known = {
                     migration_version: migration_name
-                    for migration_version, migration_name, _ in MIGRATIONS
+                    for migration_version, migration_name, _, _ in MIGRATIONS
                 }
 
                 for applied_version, applied_name in applied.items():
@@ -88,9 +88,61 @@ def run_migrations(db_path: Path = DB_PATH) -> None:
 
             except BaseException:
                 conn.rollback()
-                logger.error(f"Migration {version} failed. Rolled back changes.", exc_info=True)
+                logger.exception(
+                    f"Migration {version} failed. Rolled back changes."
+                )
                 raise
 
+    finally:
+        conn.close()
+
+
+def run_downgrades(db_path: Path = DB_PATH, target_version: int = 0) -> None:
+    """Revert applied migrations down to and including ``target_version``."""
+    if target_version < 0:
+        raise ValueError("target_version must not be negative")
+
+    conn = sqlite3.connect(db_path, timeout=30, isolation_level=None)
+    try:
+        conn.execute("PRAGMA foreign_keys = ON")
+        conn.execute("PRAGMA busy_timeout = 30000")
+        applied = dict(conn.execute(
+            "SELECT version, name FROM schema_migrations"
+        ).fetchall())
+        known = {
+            migration_version: migration_name
+            for migration_version, migration_name, _, _ in MIGRATIONS
+        }
+        if any(known.get(version) != name for version, name in applied.items()):
+            raise RuntimeError(
+                "Database migration history is incompatible "
+                "with this application version"
+            )
+
+        for version, name, _, downgrade in reversed(MIGRATIONS):
+            if version <= target_version or version not in applied:
+                continue
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                downgrade(conn)
+                violations = conn.execute("PRAGMA foreign_key_check").fetchall()
+                if violations:
+                    raise RuntimeError(
+                        f"Downgrade {version} produced foreign-key violations: "
+                        f"{violations[:5]}"
+                    )
+                conn.execute(
+                    "DELETE FROM schema_migrations WHERE version = ?",
+                    (version,),
+                )
+                conn.commit()
+                logger.info(f"Migration {version} downgraded successfully.")
+            except BaseException:
+                conn.rollback()
+                logger.exception(
+                    f"Migration {version} downgrade failed. Rolled back changes.",
+                )
+                raise
     finally:
         conn.close()
 
