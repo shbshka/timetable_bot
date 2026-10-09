@@ -2,7 +2,7 @@ import sqlite3
 
 import pytest
 
-from src.db.migrate import run_migrations
+from src.db.migrate import run_downgrades, run_migrations
 from src.db.migrations.base import Migration
 from src.db.migrations.m001_initial_schema import (
     BASELINE_TABLES,
@@ -138,6 +138,75 @@ def test_migrations_are_idempotent_on_an_isolated_database(tmp_path) -> None:
     assert connection.execute(
         "SELECT COUNT(*) FROM schema_migrations"
     ).fetchone()[0] == 2
+
+
+def test_downgrade_to_initial_schema_preserves_compatible_data(tmp_path) -> None:
+    # Arrange
+    database_path = tmp_path / "downgrade.db"
+    run_migrations(database_path)
+    connection = sqlite3.connect(database_path)
+    connection.execute(
+        "INSERT INTO groups(id, study_form, enrollment_year, group_name) "
+        "VALUES (7, 'HR', 2024, '24HR')"
+    )
+    connection.execute(
+        "INSERT INTO spreadsheets(sheet_id, academic_starting_year, last_hash) "
+        "VALUES ('sheet', 2025, 'hash')"
+    )
+    connection.execute(
+        "INSERT INTO spreadsheets_groups(id, sheet_id, group_id) "
+        "VALUES (11, 'sheet', 7)"
+    )
+    connection.execute(
+        "INSERT INTO users(chat_id, group_id, name) VALUES (42, 7, 'Alice')"
+    )
+    connection.execute(
+        """
+        INSERT INTO lectures(
+            id, source_id, group_id, lecture_date, lecture_time, subject
+        ) VALUES (21, 'sheet', 7, '2026-10-09', '08:30', 'Algorithms')
+        """
+    )
+    connection.commit()
+    connection.close()
+
+    # Act
+    run_downgrades(database_path, target_version=1)
+
+    # Assert
+    connection = sqlite3.connect(database_path)
+    assert connection.execute(
+        "SELECT version, name FROM schema_migrations"
+    ).fetchall() == [(1, "initial_schema")]
+    assert connection.execute(
+        "SELECT id, group_id, sheet_id, last_hash FROM spreadsheets"
+    ).fetchone() == (11, 7, "sheet", "hash")
+    assert connection.execute(
+        "SELECT chat_id, first_name FROM users"
+    ).fetchone() == (42, "Alice")
+    assert connection.execute(
+        "SELECT id, sheet_id, subject FROM schedule_lectures"
+    ).fetchone() == (21, "sheet", "Algorithms")
+    assert "lectures" not in Migration.get_table_names(connection)
+
+
+def test_downgrade_all_migrations_removes_application_schema(tmp_path) -> None:
+    # Arrange
+    database_path = tmp_path / "downgrade_all.db"
+    run_migrations(database_path)
+
+    # Act
+    run_downgrades(database_path)
+
+    # Assert
+    connection = sqlite3.connect(database_path)
+    assert connection.execute(
+        "SELECT COUNT(*) FROM schema_migrations"
+    ).fetchone()[0] == 0
+    assert Migration.get_table_names(connection) <= {
+        "schema_migrations",
+        "sqlite_sequence",
+    }
 
 
 def test_migration_runner_rejects_unknown_migration_history(tmp_path) -> None:
