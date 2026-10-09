@@ -1,8 +1,16 @@
 name: Workflow to Deploy Timetable Bot to Azure App Service
 
+permissions:
+  contents: read
+
+concurrency:
+  group: timetable-bot-deployment
+  cancel-in-progress: false
+
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 jobs:
   test:
@@ -27,9 +35,9 @@ jobs:
         run: |
           pytest --maxfail=1
 
-  deploy:
+  package:
     needs: test
-    name: Deploy to Azure Web App
+    name: Build Application and Create Artifact
     runs-on: ubuntu-latest
 
     steps:
@@ -41,23 +49,69 @@ jobs:
         with:
           python-version: '3.14'
 
-      - name: Install Runtime Dependencies
+      - name: Install Packaging Tools
         run: |
           python -m pip install --upgrade pip
-          python -m pip install --target .python_packages/lib/site-packages .
+          python -m pip install pip-tools
+
+      - name: Export Committed Source
+        run: |
+          mkdir deployment
+          git archive HEAD | tar -x -C deployment
 
       - name: Generate requirements.txt from pyproject.toml
+        working-directory: deployment
         run: |
-          python -m pip install pip-tools
           pip-compile pyproject.toml --output-file requirements.txt --resolver=backtracking
 
       - name: Create Zip Deployment Package
+        working-directory: deployment
         run: |
-          zip -r deploy.zip . -x '*.git*' '*__pycache__*' '*.venv*' 'tests/*' 'deploy.zip'
+          zip -r ../app.zip . -x '.github/*' 'tests/*'
 
-      - name: Deploy Code Package to Azure App Service
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bot-${{ github.sha }}
+          path: app.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  staging:
+    needs: package
+    name: Deploy to Staging Azure Web App
+    environment: staging
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bot-${{ github.sha }}
+          path: package
+
+      - name: Deploy Staging Code Package to Azure App Service
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'app-telegram-timetable-bot-5346'
+          app-name: ${{ vars.APP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: deploy.zip
+          package: package/app.zip
+
+  deploy:
+    needs: staging
+    name: Deploy to Azure Web App
+    environment: production
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bot-${{ github.sha }}
+          path: package
+          
+      - name: Deploy Production Code Package to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.APP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: package/app.zip
