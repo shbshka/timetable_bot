@@ -50,6 +50,41 @@ def test_schedule_cache_maps_course_year_to_enrollment_group(
     assert row["enrollment_year"] == enrollment_year(2, academic_year)
 
 
+def test_schedule_cache_registers_a_new_sheet_before_inserting_lectures(
+    initialized_test_database,
+) -> None:
+    academic_year = academic_start_year(institution_today())
+    lecture = Lecture(
+        date=date(2026, 10, 5),
+        time="08:30-10:00",
+        subject="Algorithms",
+        course_year=2,
+        level="HR",
+    )
+
+    count = repository.replace_schedule_for_sheet(
+        sheet_id="new-sheet-id",
+        snapshot_path="snapshot.json",
+        content_hash="hash",
+        academic_year=academic_year,
+        lectures=[lecture],
+    )
+
+    assert count == 1
+    with repository.get_db_connection() as connection:
+        sheet = connection.execute(
+            "SELECT academic_starting_year FROM spreadsheets WHERE sheet_id = ?",
+            ("new-sheet-id",),
+        ).fetchone()
+        lecture_row = connection.execute(
+            "SELECT source_id FROM lectures WHERE source_id = ?",
+            ("new-sheet-id",),
+        ).fetchone()
+
+    assert sheet["academic_starting_year"] == academic_year
+    assert lecture_row["source_id"] == "new-sheet-id"
+
+
 def test_schedule_cache_rejects_a_lecture_without_group_level(
     initialized_test_database,
 ) -> None:
