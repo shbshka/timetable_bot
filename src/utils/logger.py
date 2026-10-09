@@ -10,6 +10,7 @@ PURPOSE_LOGS = {
     "app": "application.log",
     "bot": "telegram.log",
     "database": "database.log",
+    "migrations": "migrations.log",
     "parser": "parser.log",
     "google": "google_sheets.log",
     "admin": "admin.log",

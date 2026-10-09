@@ -31,9 +31,10 @@ def create_bot_app() -> Application:
     registers all Telegram handlers, and schedules background jobs.
     """
     logger.info("Initializing database schema...")
-
     run_migrations()
+    logger.info("Migrations applied successfully.")
     populate_db()
+    logger.info("Database schema initialized successfully.")
 
 
     logger.info("Building Telegram application...")

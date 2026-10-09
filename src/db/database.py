@@ -40,18 +40,48 @@ def populate_db(db_path: Path = DB_PATH) -> None:
     try:
         with get_db_connection(db_path) as conn:
             cursor = conn.cursor()
+            group_name_info = conn.execute(
+                "PRAGMA table_xinfo(groups)"
+            ).fetchall()
+            group_name_is_generated = any(
+                row[1] == "group_name" and row[6] == 3
+                for row in group_name_info
+            )
 
             for form in STUDY_FORMS:
                 for year_num in YEARS:
                     group_enrollment_year = enrollment_year(year_num)
 
-                    cursor.execute("""
-                        INSERT INTO groups (study_form, enrollment_year)
-                        VALUES (?, ?)
-                        ON CONFLICT(study_form, enrollment_year) DO UPDATE 
-                        SET study_form=excluded.study_form, 
-                        enrollment_year=excluded.enrollment_year
-                    """, (form, group_enrollment_year))
+                    if group_name_is_generated:
+                        cursor.execute(
+                            """
+                            INSERT INTO groups (study_form, enrollment_year)
+                            VALUES (?, ?)
+                            ON CONFLICT(study_form, enrollment_year) DO UPDATE
+                            SET study_form=excluded.study_form,
+                                enrollment_year=excluded.enrollment_year
+                            """,
+                            (form, group_enrollment_year),
+                        )
+                    else:
+                        cursor.execute(
+                            """
+                            INSERT INTO groups (
+                                study_form, enrollment_year, group_name
+                            )
+                            VALUES (?, ?, PRINTF('%02d', ? % 100) || ?)
+                            ON CONFLICT(study_form, enrollment_year) DO UPDATE
+                            SET study_form=excluded.study_form,
+                                enrollment_year=excluded.enrollment_year,
+                                group_name=excluded.group_name
+                            """,
+                            (
+                                form,
+                                group_enrollment_year,
+                                group_enrollment_year,
+                                form,
+                            ),
+                        )
     except sqlite3.Error as e:
         logger.error(f"Failed to populate database: {e}", exc_info=True)
         raise
