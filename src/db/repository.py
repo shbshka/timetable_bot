@@ -113,6 +113,21 @@ def set_user_group(chat_id: int, group_id: int) -> None:
         """, (chat_id, group_id))
 
 
+def get_user_group_and_tz(chat_id: int) -> dict[str, Any] | None:
+    """Fetches the group details and timezone for a given user."""
+    with get_db_connection() as conn:
+        row = conn.execute("""
+            SELECT 
+                g.id, 
+                g.group_name,
+                u.timezone
+            FROM users u
+            JOIN groups g ON u.group_id = g.id
+            WHERE u.chat_id = ?
+        """, (chat_id,)).fetchone()
+        return dict(row) if row else None
+
+
 def get_user_schedule_context(chat_id: int) -> dict[str, Any] | None:
     """
     Fetches user group and active sheet ID
