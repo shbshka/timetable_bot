@@ -8,10 +8,12 @@ from src.parser.academic_year import academic_start_year
 from src.parser.interface import ParsedSchedule, ScheduleGrid
 from src.parser.models import DaySchedule, Lecture
 from src.utils.time import institution_today
+from src.utils.logger import get_logger
 
 _DATE_RE = re.compile(r"(?<!\d)(\d{1,2})/(\d{1,2})(?:/(\d{2,4}))?")
 _TIME_RE = re.compile(r"(?<!\d)([01]?\d|2[0-3]):([0-5]\d)(?!\d)")
 _COURSE_YEAR_RE = re.compile(r"\b(?:курс|course)\s*(\d+)\b", re.IGNORECASE)
+logger = get_logger("parser")
 
 
 def _value(grid: ScheduleGrid, row: int, column: int) -> str:
@@ -50,14 +52,12 @@ def _find_header_blocks(grid: ScheduleGrid) -> list[tuple[int, int]]:
             if val != "date":
                 continue
             header = [_value(grid, row_index, column + offset).lower() for offset in range(6)]
-            print(f"DEBUG: Found 'date' at row {row_index}, col {column}. Header slice: {header}")
+            logger.debug(f"Found 'date' at row {row_index}, col {column}. Header slice: {header}")
 
-            # Проверяем только обязательные колонки: time, room, course.
-            # Оставляем свободу для пустых или кастомных названий group/form в шапке.
             if header[1:4] == ["time", "room", "course"]:
                 blocks.append((row_index, column))
             else:
-                print(f"DEBUG: Header mismatch! Expected time/room/course at offsets 1-3, got {header[1:4]}")
+                logger.debug(f"Header mismatch! Expected time/room/course at offsets 1-3, got {header[1:4]}")
     return blocks
 
 
@@ -123,7 +123,6 @@ def parse_all_schedule_grid(grid: ScheduleGrid) -> list[Lecture]:
             if _TIME_RE.search(time_value):
                 current_time = time_value
 
-            # Безопасно получаем ячейку предмета (колонка Course / start_column + 3)
             cell_item = grid[row_index][start_column + 3] if row_index < len(grid) and start_column + 3 < len(
                 grid[row_index]) else {}
             if isinstance(cell_item, dict):

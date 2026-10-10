@@ -124,7 +124,6 @@ async def fetch_sheet_data_with_sa(
                 val = cell.get("formattedValue", "")
                 note = cell.get("note", "")
 
-                # Безопасно достаем strikethrough через цепочку get
                 is_strikethrough = bool(
                     cell.get("effectiveFormat", {})
                     .get("textFormat", {})
