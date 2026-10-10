@@ -24,6 +24,7 @@ help: |
   Никто тебе здесь не поможет, кроме тебя самого 🗿
   (можно пнуть меня по @shoobec)
   Быстрые команды:
+  • /home — Главное меню
   • /today — Расписание на сегодня
   • /week — Расписание на неделю
   • /group — Изменить группу
@@ -37,6 +38,7 @@ btns:
   btn_current_week: "📅 Текущая неделя"
   btn_change_group: "⚙️ Сменить группу"
   btn_select_group: "🎓 Выбрать группу"
+  btn_notification_preferences: "🔔 Настройки уведомлений"
   btn_language: "🌐 Язык / Language"
   btn_home: "🏠 Главное меню"
 

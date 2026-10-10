@@ -17,6 +17,7 @@ btns:
   btn_week: "Text for 'Full Week' schedule button. Variables: none"
   btn_change_group: "Text for 'Change Group' button. Variables: none"
   btn_select_group: "Text for 'Select Group' button. Variables: none"
+  btn_notification_preferences: "Text for 'Notification Preferences' button. Variables: none"
   btn_language: "Text for 'Language' button. Variables: none"
   btn_home: "Text for 'Main Menu' navigation button. Variables: none"
 

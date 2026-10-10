@@ -10,9 +10,11 @@ from src.bot.admin.access import block_banned_users
 from src.bot.admin.router import register_admin_handlers
 from src.bot.handlers.group import register_group_handlers
 from src.bot.handlers.help import register_help_handler
+from src.bot.handlers.home import register_home_handler
 from src.bot.handlers.language import register_language_handler
 from src.bot.handlers.schedule import register_schedule_handlers
 from src.bot.handlers.start import register_start_handler
+from src.bot.handlers.notifications import register_notification_preferences_handler
 from src.bot.jobs.watcher import (
     check_sheet_updates_job,
     cleanup_schedule_snapshots_job,
@@ -49,8 +51,10 @@ def create_bot_app() -> Application:
     app.add_handler(TypeHandler(Update, block_banned_users), group=-1)
 
     register_help_handler(app)
-    register_start_handler(app)
     register_language_handler(app)
+    register_notification_preferences_handler(app)
+    register_home_handler(app)
+    register_start_handler(app)
     register_group_handlers(app)
     register_schedule_handlers(app)
     register_admin_handlers(app)

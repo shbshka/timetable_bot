@@ -109,6 +109,20 @@ async def ban_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
 
 @admin_only
+async def delete_user_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    admin_chat_id = update.effective_chat.id
+    if len(context.args) != 1 or not context.args[0].lstrip("-").isdigit():
+        await update.effective_message.reply_text(get_user_msg(admin_chat_id, "admin.delete_user_usage"), parse_mode="HTML")
+        return
+
+    chat_id = int(context.args[0])
+    if chat_id <= 0:
+        await update.effective_message.reply_text(get_user_msg(admin_chat_id, "admin.delete_user_usage"), parse_mode="HTML")
+
+    pass #TODO: implement proper user repository; soft delete?
+
+
+@admin_only
 async def unban_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     admin_chat_id = update.effective_chat.id
     if len(context.args) != 1 or not context.args[0].lstrip("-").isdigit():

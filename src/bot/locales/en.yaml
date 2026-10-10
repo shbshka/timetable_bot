@@ -24,6 +24,7 @@ help: |
   No one here can help you except yourself 🗿
   (you can ping me at @shoobec)
   Quick commands:
+  • /home — Main menu
   • /today — Today's schedule
   • /week — Schedule for the week
   • /group — Change group
@@ -37,6 +38,7 @@ btns:
   btn_current_week: "📅 Current week"
   btn_change_group: "⚙️ Change group"
   btn_select_group: "🎓 Select group"
+  btn_notification_preferences: "🔔 Notification preferences"
   btn_language: "🌐 Язык / Language"
   btn_home: "🏠 Main menu"
 
