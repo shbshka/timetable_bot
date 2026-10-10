@@ -40,11 +40,19 @@ btns:
   btn_select_group: "🎓 Select group"
   btn_notification_preferences: "🔔 Notification preferences"
   btn_language: "🌐 Язык / Language"
+  btn_timezone: "🕒 Timezone"
   btn_home: "🏠 Main menu"
+
+  btn_enabled: "✅ on"
+  btn_disabled: "🟥 off"
 
 language:
   prompt: "Select interface language:"
   changed: "Interface language: {language}."
+
+timezone:
+  prompt: "Select timezone:"
+  current: "🕒 Timezone: {timezone}."
 
 group:
   choose_form:
@@ -133,6 +141,21 @@ schedule:
       ❌ No schedule found in the database for <b>{group_name}</b>.
       Got a link to it? Send it as a reply and wait a bit
       (it takes a while, I confirm them manually).
+
+notifications:
+  prompt: |
+    🔔 <b>Notification preferences</b>
+    Group: <code>{group_name}</code>
+    Timezone: <code>{timezone}</code>
+    
+    To toggle notifications, click the corresponding switch
+    (and wait for it to change)
+
+    <b>Select which notifications you want to receive:</b>
+  types:
+    schedule_change: "Schedule changes"
+    day_summary: "Daily schedule summary"
+    reminder: "Reminder notification"
 
 error:
   schedule_fetch_failed: |

@@ -19,11 +19,19 @@ btns:
   btn_select_group: "Text for 'Select Group' button. Variables: none"
   btn_notification_preferences: "Text for 'Notification Preferences' button. Variables: none"
   btn_language: "Text for 'Language' button. Variables: none"
+  btn_timezone: "Text for 'Timezone' button. Variables: none"
   btn_home: "Text for 'Main Menu' navigation button. Variables: none"
+
+  btn_enabled: "Text for 'Enabled' status button. Variables: none"
+  btn_disabled: "Text for 'Disabled' status button. Variables: none"
 
 language:
   prompt: "Prompt for selecting interface language. Variables: none"
   changed: "Confirmation message after changing interface language. Variables: {language}"
+
+timezone:
+  prompt: "Prompt for selecting timezone. Variables: none"
+  current: "Confirmation message showing current timezone. Variables: {timezone}"
 
 group:
   choose_form:
@@ -69,6 +77,13 @@ schedule:
   errors:
     notification_failed: "Error when notification to admin fails. Variables: none"
     not_found: "Error message when schedule is not found in database. Variables: {group_name}"
+
+notifications:
+  prompt: "Prompt for notification preferences. Variables: {group_name}, {timezone}"
+  types:
+    daily_schedule: "Description for daily schedule notification type. Variables: none"
+    weekly_schedule: "Description for weekly schedule notification type. Variables: none"
+    schedule_updates: "Description for schedule updates notification type. Variables: none"
 
 error:
   schedule_fetch_failed: "Error message when fetching schedule fails. Variables: none"

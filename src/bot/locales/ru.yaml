@@ -40,11 +40,20 @@ btns:
   btn_select_group: "🎓 Выбрать группу"
   btn_notification_preferences: "🔔 Настройки уведомлений"
   btn_language: "🌐 Язык / Language"
+  btn_timezone: "🕒 Часовой пояс"
   btn_home: "🏠 Главное меню"
+
+  btn_enabled: "✅ вкл."
+  btn_disabled: "🟥 выкл."
+  btn_loading: "⏳..."
 
 language:
   prompt: "Выберите язык интерфейса:"
   changed: "Язык интерфейса: {language}."
+
+timezone:
+  prompt: "Выберите часовой пояс:"
+  current: "🕒 Часовой пояс: {timezone}."
 
 group:
   choose_form:
@@ -133,6 +142,21 @@ schedule:
       ❌ В базе не найдено расписание для <b>{group_name}</b>.
       Есть ссылка на него? Отправьте ее ответным сообщением и подождите
       (долго, я руками подтверждаю).
+
+notifications:
+  prompt: |
+    🔔 <b>Настройки уведомлений</b>
+    Группа: <code>{group_name}</code>
+    Время: <code>{timezone}</code>
+
+    Для переключения уведомлений нажмите на соответствующий переключатель
+    (и подождите, пока он поменяется)
+
+    <b>Выберите, какие уведомления вы хотите получать:</b>
+  types:
+    schedule_change: "Изменения в расписании"
+    day_summary: "Расписание на день"
+    reminder: "Напоминание о парах"
 
 error:
   schedule_fetch_failed: |
