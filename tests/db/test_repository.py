@@ -4,6 +4,7 @@ from datetime import date
 import pytest
 
 from src.db import repository
+from src.db.db_repository.notifications_repository import NotificationsRepository
 from src.db.migrate import run_migrations
 from src.parser.academic_year import academic_start_year, enrollment_year
 from src.parser.models import Lecture
@@ -158,6 +159,36 @@ def test_start_registration_creates_each_notification_type_once() -> None:
         ("day_summary", 0),
         ("reminder", 0),
     ]
+
+
+def test_notification_preference_toggle_updates_database_state() -> None:
+    repository.register_user_if_not_exists(42)
+
+    NotificationsRepository.toggle_notification_preference(42, "day_summary")
+    with repository.get_db_connection() as connection:
+        first_state = connection.execute(
+            """
+            SELECT p.is_enabled
+            FROM notification_preferences p
+            JOIN notification_types t ON t.id = p.notification_type_id
+            WHERE p.recipient_id = ? AND t.name = ?
+            """,
+            (42, "day_summary"),
+        ).fetchone()["is_enabled"]
+
+    NotificationsRepository.toggle_notification_preference(42, "day_summary")
+    with repository.get_db_connection() as connection:
+        second_state = connection.execute(
+            """
+            SELECT p.is_enabled
+            FROM notification_preferences p
+            JOIN notification_types t ON t.id = p.notification_type_id
+            WHERE p.recipient_id = ? AND t.name = ?
+            """,
+            (42, "day_summary"),
+        ).fetchone()["is_enabled"]
+
+    assert (first_state, second_state) == (1, 0)
 
 
 def test_test_database_writes_do_not_reach_production_database(
