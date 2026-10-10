@@ -1,8 +1,10 @@
+import sqlite3
 from datetime import date
 
 import pytest
 
 from src.db import repository
+from src.db.migrate import run_migrations
 from src.parser.academic_year import academic_start_year, enrollment_year
 from src.parser.models import Lecture
 from src.utils.time import institution_today
@@ -135,6 +137,41 @@ def test_user_profile_preserves_locale_group_and_schedule_context(
     assert "Unsupported locale" in str(invalid_locale.value)
 
 
+def test_start_registration_creates_each_notification_type_once() -> None:
+    repository.register_user_if_not_exists(42)
+    repository.register_user_if_not_exists(42)
+
+    with repository.get_db_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT t.name, p.is_enabled
+            FROM notification_preferences p
+            JOIN notification_types t ON t.id = p.notification_type_id
+            WHERE p.recipient_id = ?
+            ORDER BY t.id
+            """,
+            (42,),
+        ).fetchall()
+
+    assert [(row["name"], row["is_enabled"]) for row in rows] == [
+        ("schedule_change", 1),
+        ("day_summary", 0),
+        ("reminder", 0),
+    ]
+
+
+def test_test_database_writes_do_not_reach_production_database(
+    initialized_test_database, tmp_path
+) -> None:
+    production_path = tmp_path / "production.db"
+    run_migrations(production_path)
+
+    repository.register_user_if_not_exists(42)
+
+    with sqlite3.connect(production_path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0
+
+
 def test_group_subscribers_exclude_banned_and_disabled_users() -> None:
     with repository.get_db_connection() as connection:
         connection.executemany(
@@ -146,8 +183,11 @@ def test_group_subscribers_exclude_banned_and_disabled_users() -> None:
         )
         connection.executemany(
             """
-            INSERT INTO notification_preferences (type, recipient_id, is_enabled)
-            VALUES ('schedule_change', ?, ?)
+            INSERT INTO notification_preferences (
+                notification_type_id, recipient_id, is_enabled
+            )
+            SELECT id, ?, ? FROM notification_types
+            WHERE name = 'schedule_change'
             """,
             [(1, 1), (2, 1), (3, 0)],
         )
@@ -181,13 +221,25 @@ def test_pending_notifications_support_multiple_types_for_one_user() -> None:
     with repository.get_db_connection() as connection:
         connection.execute(
             """
-            INSERT INTO notification_preferences (type, recipient_id)
-            VALUES (?, ?)
+            INSERT INTO notification_types (name) VALUES (?)
+            ON CONFLICT(name) DO NOTHING
             """,
-            ("lecture_reminder", 1),
+            ("lecture_reminder",),
+        )
+        connection.execute(
+            """
+            INSERT INTO notification_preferences (notification_type_id, recipient_id)
+            SELECT id, ? FROM notification_types WHERE name = ?
+            """,
+            (1, "lecture_reminder"),
         )
         preference = connection.execute(
-            "SELECT id FROM notification_preferences WHERE type = 'lecture_reminder'"
+            """
+            SELECT p.id
+            FROM notification_preferences p
+            JOIN notification_types t ON t.id = p.notification_type_id
+            WHERE t.name = 'lecture_reminder'
+            """
         ).fetchone()
         connection.execute(
             """
@@ -200,15 +252,16 @@ def test_pending_notifications_support_multiple_types_for_one_user() -> None:
     with repository.get_db_connection() as connection:
         rows = connection.execute(
             """
-            SELECT p.type, q.scheduled_for
+            SELECT t.name, q.scheduled_for
             FROM notifications_queue q
             JOIN notification_preferences p ON p.id = q.notification_id
+            JOIN notification_types t ON t.id = p.notification_type_id
             WHERE p.recipient_id = 1
-            ORDER BY p.type
+            ORDER BY t.name
             """
         ).fetchall()
 
-    assert [row["type"] for row in rows] == [
+    assert [row["name"] for row in rows] == [
         "lecture_reminder",
         "schedule_change:sheet:hash",
     ]
