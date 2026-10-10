@@ -30,11 +30,15 @@ def _find_header_blocks(grid: ScheduleGrid) -> list[tuple[int, int]]:
     blocks = []
     for row_index, row in enumerate(grid):
         for column, cell in enumerate(row):
-            if cell.get("value", "").strip().lower() != "date":
+            val = cell.get("value", "").strip().lower()
+            if val != "date":
                 continue
             header = [_value(grid, row_index, column + offset).lower() for offset in range(6)]
-            if header[1:6] == ["time", "room", "course", "teacher", "form"]:
+            print(f"DEBUG: Found 'date' at row {row_index}, col {column}. Header slice: {header}")
+            if header[1:6] == ["time", "room", "course", "group", "form"]:
                 blocks.append((row_index, column))
+            else:
+                print(f"DEBUG: Header mismatch! Expected ['time', 'room', 'course', 'group', 'form'], got {header[1:6]}")
     return blocks
 
 
@@ -45,7 +49,6 @@ def _course_year(grid: ScheduleGrid, header_row: int, start_column: int) -> int 
         if match:
             return int(match.group(1))
     return None
-
 
 def _parse_date(value: str, academic_year: int, previous: date | None) -> date | None:
     match = _DATE_RE.search(value)
@@ -81,34 +84,56 @@ def _study_form(form: str) -> str | None:
 def parse_all_schedule_grid(grid: ScheduleGrid) -> list[Lecture]:
     academic_year = academic_start_year()
     lectures: list[Lecture] = []
+    seen = set()
+
     for header_row, start_column in _find_header_blocks(grid):
         course_year = _course_year(grid, header_row, start_column)
         current_date: date | None = None
+        current_time: str | None = None  # <--- Добавляем запоминание времени
+
         for row_index in range(header_row + 1, len(grid)):
             date_value = _value(grid, row_index, start_column)
             parsed_date = _parse_date(date_value, academic_year, current_date)
             if parsed_date:
                 current_date = parsed_date
+
             time_value = _value(grid, row_index, start_column + 1)
-            subject = _value(grid, row_index, start_column + 3)
-            if not current_date or not subject or not _TIME_RE.search(time_value):
-                continue
+            if _TIME_RE.search(time_value):
+                current_time = time_value  # <--- Запоминаем время, если оно есть в строке
+
+            subject_cell = grid[row_index][start_column + 3] if row_index < len(grid) and start_column + 3 < len(
+                grid[row_index]) else {}
+            subject = subject_cell.get("value", "").strip()
+            is_strikethrough = subject_cell.get("strikethrough", False)
+
             cell_note = _note(grid, row_index, start_column + 3)
-            time = time_value or cell_note
-            lectures.append(
-                Lecture(
-                    date=current_date,
-                    time=time,
-                    room=_value(grid, row_index, start_column + 2) or None,
-                    subject=subject,
-                    teacher=_value(grid, row_index, start_column + 4) or None,
-                    form=_value(grid, row_index, start_column + 5) or None,
-                    hours=_duration_hours(time),
-                    course_year=course_year,
-                    level=_study_form(_value(grid, row_index, start_column + 5)),
-                    cell_note=cell_note or None,
-                )
+            time = current_time or cell_note  # <--- Используем текущее время или заметку
+
+            # Проверяем по унаследованному времени
+            if not current_date or not subject or not time or is_strikethrough:
+                continue
+
+            group_value = _value(grid, row_index, start_column + 4) or None
+
+            lecture = Lecture(
+                date=current_date,
+                time=time,
+                room=_value(grid, row_index, start_column + 2) or None,
+                subject=subject,
+                teacher=None,
+                form=_value(grid, row_index, start_column + 5) or None,
+                hours=_duration_hours(time),
+                course_year=course_year,
+                level=_study_form(_value(grid, row_index, start_column + 5)),
+                course_notes=group_value,
+                cell_note=cell_note or None,
             )
+
+            unique_key = (lecture.date, lecture.time, lecture.subject, lecture.room, group_value)
+            if unique_key not in seen:
+                seen.add(unique_key)
+                lectures.append(lecture)
+
     return lectures
 
 

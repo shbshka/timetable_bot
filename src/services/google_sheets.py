@@ -84,7 +84,7 @@ async def fetch_sheet_data_with_sa(
     url = f"https://sheets.googleapis.com/v4/spreadsheets/{sheet_id}"
     params = {
         "includeGridData": "true",
-        "fields": "sheets(properties(title),data/rowData/values(formattedValue,note))",
+        "fields": "sheets(properties(title),data/rowData/values(formattedValue,note,effectiveFormat/textFormat/strikethrough))",
     }
     headers = {"Authorization": f"Bearer {token}"}
 
@@ -123,7 +123,19 @@ async def fetch_sheet_data_with_sa(
             for cell in row.get("values", []):
                 val = cell.get("formattedValue", "")
                 note = cell.get("note", "")
-                cell_list.append({"value": val, "note": note})
+
+                # Безопасно достаем strikethrough через цепочку get
+                is_strikethrough = bool(
+                    cell.get("effectiveFormat", {})
+                    .get("textFormat", {})
+                    .get("strikethrough", False)
+                )
+
+                cell_list.append({
+                    "value": val,
+                    "note": note,
+                    "strikethrough": is_strikethrough
+                })
             grid.append(cell_list)
 
         logger.info(f"Parsed grid with {len(grid)} rows from sheet '{sheet_title}'")
