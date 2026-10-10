@@ -2,17 +2,30 @@ import sqlite3
 from pathlib import Path
 
 from config import DB_PATH
-from src.db.migrations import m001_initial_schema, m002_optimized_schema
+from src.db.migrations import (
+    m001_initial_schema,
+    m002_optimized_schema,
+    m003_add_timezone_and_notification_types,
+)
 from src.utils.logger import get_logger
 
 logger = get_logger("migrations")
 
 initial = m001_initial_schema.InitialSchemaMigration()
 optimized = m002_optimized_schema.OptimizedSchemaMigration()
+timezone_and_notification_types = (
+    m003_add_timezone_and_notification_types.AddTimezoneAndNotificationTypesMigration()
+)
 
 MIGRATIONS = (
     (initial.version, initial.name, initial.upgrade, initial.downgrade),
     (optimized.version, optimized.name, optimized.upgrade, optimized.downgrade),
+    (
+        timezone_and_notification_types.version,
+        timezone_and_notification_types.name,
+        timezone_and_notification_types.upgrade,
+        timezone_and_notification_types.downgrade,
+    ),
 )
 
 def run_migrations(db_path: Path = DB_PATH) -> None:
