@@ -2,7 +2,7 @@ from src.parser.implementations.four_week_grid import FourWeekGridParser
 
 
 def _row(values: list[str]) -> list[dict[str, str]]:
-    return [{"value": value, "note": ""} for value in values]
+    return [{"value": value, "note": "", "strikethrough": False} for value in values]
 
 
 def test_four_week_layout_propagates_dates_and_reads_repeated_blocks() -> None:
@@ -12,9 +12,9 @@ def test_four_week_layout_propagates_dates_and_reads_repeated_blocks() -> None:
         _row(["Course 2", "", "", "", "", "W01", "", "Course 2"]),
         _row(["Program Informatics", "", "", "", "", "", "", ""]),
         _row(["", "", "", "", "", "", "", ""]),
-        _row(["Date", "Time", "Room", "Course", "Teacher", "Form", "", "Date", "Time", "Room", "Course", "Teacher", "Form"]),
-        _row(["05/10 Mon", "08:30-10:00", "A-101", "Algorithms", "Dr Smith", "HR", "", "12/10 Mon", "10:10-11:40", "B-202", "Databases", "Dr Jones", "HR"]),
-        _row(["", "10:10-11:40", "A-101", "Networks", "Dr Smith", "HR", "", "", "11:50-13:20", "B-202", "Security", "Dr Jones", "HR"]),
+        _row(["Date", "Time", "Room", "Course", "Group", "Form", "", "Date", "Time", "Room", "Course", "Group", "Form"]),
+        _row(["05/10 Mon", "08:30-10:00", "A-101", "Algorithms", "Group 1", "HR", "", "12/10 Mon", "10:10-11:40", "B-202", "Databases", "Group 1", "HR"]),
+        _row(["", "10:10-11:40", "A-101", "Networks", "Group 1", "HR", "", "", "11:50-13:20", "B-202", "Security", "Group 1", "HR"]),
     ]
 
     # Act
