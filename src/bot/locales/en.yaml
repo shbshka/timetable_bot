@@ -145,8 +145,9 @@ schedule:
 notifications:
   prompt: |
     🔔 <b>Notification preferences</b>
-    Group: <code>{group_name}</code>
-    Timezone: <code>{timezone}</code>
+
+    📌 Group: <code>{group_name}</code>
+    🕒 Timezone: <code>{timezone}</code>
     
     To toggle notifications, click the corresponding switch
     (and wait for it to change)
@@ -164,6 +165,7 @@ error:
     For goodness' sake, stop clicking the buttons, I already received a notification and I'm looking into it.
   session_expired: |
     ⚠️ Session expired. Send the last command again and restart.
+  unclickable: "BRUH 🗿➡️"
 
 admin:
   unauthorized:

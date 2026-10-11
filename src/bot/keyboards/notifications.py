@@ -1,17 +1,17 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-from src.db.db_repository.notifications_repository import NotificationsRepository
+from src.db.db_repository.notifications_repository import NotificationPreferencesRepository
 from src.utils.messages import get_user_msg
 
 
 def notification_preferences_keyboard(chat_id: int) -> InlineKeyboardMarkup:
     """Creates an inline keyboard for notification preferences."""
-    preferences = NotificationsRepository.get_notification_preferences_by_user_id(chat_id)
+    preferences = NotificationPreferencesRepository.get_notification_preferences_by_user_id(chat_id)
 
     return InlineKeyboardMarkup(
         [
             *[
-                [InlineKeyboardButton(get_user_msg(chat_id, f"notifications.types.{pref_type}"), callback_data=f"ignore_{pref_type}"), #TODO: add "bruh it's unclickable"
+                [InlineKeyboardButton(get_user_msg(chat_id, f"notifications.types.{pref_type}"), callback_data=f"unclickable_{pref_type}"),
                 InlineKeyboardButton(
                     get_user_msg(chat_id, "btns.btn_enabled" if is_enabled else "btns.btn_disabled"),
                     callback_data=f"cmd_toggle_pref:{pref_type}:{is_enabled}",

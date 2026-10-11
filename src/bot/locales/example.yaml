@@ -88,6 +88,7 @@ notifications:
 error:
   schedule_fetch_failed: "Error message when fetching schedule fails. Variables: none"
   session_expired: "Message when user interactive session expires. Variables: none"
+  unclickable: "Message when user clicks an unclickable button. Variables: none"
 
 admin:
   unauthorized:
