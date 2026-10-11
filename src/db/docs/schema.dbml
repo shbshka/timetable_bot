@@ -72,11 +72,17 @@ Table users {
     name text
     locale text [not null, default: 'ru']
     is_banned boolean [not null, default: `false`]
+    timezone text [not null, default: 'Europe/Vilnius']
     created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
 
     checks {
         `locale IN ('ru', 'en')`
         `is_banned IN (0, 1)`
+        `timezone GLOB '[A-Za-z]*/*'`
+        `timezone NOT GLOB '*[^A-Za-z0-9_+./-]*'`
+        `timezone NOT GLOB '/*'`
+        `timezone NOT GLOB '*/'`
+        `timezone NOT GLOB '*//*'`
     }
 
     indexes {
@@ -85,21 +91,30 @@ Table users {
 }
 Ref: users.group_id > groups.id [delete: set null]
 
+Table notification_types {
+    id integer [primary key]
+    name text [not null, unique]
+
+    checks {
+        `name != ''`
+    }
+}
+
 Table notification_preferences {
     id integer [primary key]
-    type text [not null]
+    notification_type_id integer [not null]
     recipient_id integer [not null]
     is_enabled boolean [not null, default: `true`]
 
     checks {
-        `type != ''`
         `is_enabled IN (0, 1)`
     }
 
     indexes {
-        (recipient_id, type) [unique]
+        (recipient_id, notification_type_id) [unique]
     }
 }
+Ref: notification_preferences.notification_type_id > notification_types.id [delete: cascade, update: no action]
 Ref: notification_preferences.recipient_id > users.chat_id [delete: cascade, update: no action]
 
 Table notification_status {
