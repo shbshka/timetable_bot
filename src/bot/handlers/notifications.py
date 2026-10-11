@@ -6,7 +6,7 @@ from src.bot.keyboards.notifications import (
     notification_preferences_keyboard,
     notification_preferences_loading_keyboard,
 )
-from src.db.db_repository.notifications_repository import NotificationsRepository
+from src.db.db_repository.notifications_repository import NotificationPreferencesRepository
 from src.db.repository import get_user_group_and_tz
 from src.utils.logger import get_logger
 from src.utils.messages import get_user_msg
@@ -66,7 +66,7 @@ async def toggle_notification_preference(update: Update, context: ContextTypes.D
         if "Message is not modified" not in str(error):
             raise
 
-    NotificationsRepository.toggle_notification_preference(chat_id, pref_type)
+    NotificationPreferencesRepository.toggle_notification_preference(chat_id, pref_type)
 
     reply_markup = notification_preferences_keyboard(chat_id)
     try:
@@ -76,8 +76,15 @@ async def toggle_notification_preference(update: Update, context: ContextTypes.D
             raise
 
 
+async def handle_unclickable_notification(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handles clicks on unclickable notification preference buttons."""
+    query = update.callback_query
+    await query.answer(get_user_msg(update.effective_chat.id, "error.unclickable"), show_alert=True)
+
+
 def register_notification_preferences_handler(app) -> None:
     """Registers the /notifications command handler into the Application."""
     app.add_handler(CommandHandler("notifications", notification_preferences_command))
     app.add_handler(CallbackQueryHandler(notification_preferences_command, pattern="^cmd_notification_preferences$"))
     app.add_handler(CallbackQueryHandler(toggle_notification_preference, pattern="^cmd_toggle_pref:"))
+    app.add_handler(CallbackQueryHandler(handle_unclickable_notification, pattern="^unclickable_"))

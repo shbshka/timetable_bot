@@ -1,5 +1,6 @@
 import sqlite3
 from abc import ABC, abstractmethod
+from typing import Any
 
 from src.db.database import get_db_connection
 
@@ -18,6 +19,59 @@ class Repository(ABC):
         with get_db_connection() as conn:
                 rows = conn.execute(f"SELECT * FROM {self.table_name}").fetchall()
                 return [dict(row) for row in rows]
+
+
+    def get_items_by_filters(self, filters: dict[str, Any] | None) -> list[dict]:
+        """Fetches items from the repository based on one or multiple filters."""
+
+        query = f"SELECT * FROM {self.table_name}"
+        params = []
+
+        if filters:
+            conditions = []
+            for column, value in filters.items():
+                if not column.isidentifier():
+                    raise ValueError(f"Invalid column name: {column}")
+
+                if isinstance(value, (list, tuple)):
+                    if not value:
+                        continue
+
+                    placeholders = ",".join(["?"] * len(value))
+                    conditions.append(f"{column} IN ({placeholders})")
+                    params.extend(value)
+                else:
+                    conditions.append(f"{column} = ?")
+                    params.append(value)
+            
+            if conditions:
+                query += " WHERE " + " AND ".join(conditions)
+
+        with get_db_connection() as conn:
+            rows = conn.execute(query, tuple(params)).fetchall()
+            return [dict(row) for row in rows]
+
+
+    def get_items_by_conditions(self, conditions: dict[str, Any] | None) -> list[dict]:
+        """Fetches items from the repository based on one or multiple conditions."""
+        
+        query = f"SELECT * FROM {self.table_name}"
+        params = []
+
+        if conditions:
+            conditions = []
+            for column, value in conditions.items():
+                if not column.isidentifier():
+                    raise ValueError(f"Invalid column name: {column}")
+                
+                conditions.append(f"{column} = ?")
+                params.append(value)
+            
+            query += " WHERE " + " OR ".join(conditions)
+
+        with get_db_connection() as conn:
+            rows = conn.execute(query, tuple(params)).fetchall()
+            return [dict(row) for row in rows]
 
 
     def get_item_by_id(self, item_id: int) -> dict | None:

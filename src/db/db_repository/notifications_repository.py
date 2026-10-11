@@ -2,7 +2,7 @@ from src.db import repository
 from src.db.db_repository.base import Repository
 
 
-class NotificationsRepository(Repository):
+class NotificationPreferencesRepository(Repository):
     """Repository for managing user notification preferences."""
 
     @property
@@ -12,7 +12,10 @@ class NotificationsRepository(Repository):
 
     @staticmethod
     def get_notification_preferences_by_user_id(user_id: int) -> dict[str, bool]:
-        """Fetches notification preferences for a specific user by their ID."""
+        """
+        Fetches notification preferences for a specific user by their ID.
+        Returns a dictionary "name": name of the notification type, "is_enabled": True/False
+        """
 
         with repository.get_db_connection() as conn:
             rows = conn.execute(
@@ -27,6 +30,59 @@ class NotificationsRepository(Repository):
             ).fetchall()
 
             return {row["name"]: bool(row["is_enabled"]) for row in rows}
+
+
+    @staticmethod
+    def get_planning_preferences(
+        conn,
+        user_id: int | None = None,
+    ) -> list[dict]:
+        sql = """
+            SELECT
+                p.id,
+                p.recipient_id,
+                p.is_enabled,
+                p.daily_time_local,
+                p.reminder_minutes_before,
+                p.send_empty_schedule,
+                t.name AS notification_type,
+                u.group_id,
+                u.timezone,
+                u.is_banned
+            FROM notification_preferences p
+            JOIN notification_types t
+              ON t.id = p.notification_type_id
+            JOIN users u
+              ON u.chat_id = p.recipient_id
+        """
+        params = ()
+
+        if user_id is not None:
+            sql += " WHERE p.recipient_id = ?"
+            params = (user_id,)
+
+        sql += " ORDER BY p.recipient_id, p.id"
+
+        return [
+            dict(row)
+            for row in conn.execute(sql, params).fetchall()
+        ]
+
+
+    @staticmethod
+    def get_enabled_notifications() -> list[dict]:
+        """Return enabled preference records, not just type names."""
+        with repository.get_db_connection() as conn:
+            return [
+                preference
+                for preference in (
+                    NotificationPreferencesRepository
+                    .get_planning_preferences(conn)
+                )
+                if preference["is_enabled"]
+                and not preference["is_banned"]
+                and preference["group_id"] is not None
+            ]
 
 
     @staticmethod
