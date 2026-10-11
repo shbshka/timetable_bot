@@ -250,32 +250,23 @@ def test_pending_notifications_support_multiple_types_for_one_user() -> None:
     repository.register_user_if_not_exists(1)
     repository.enqueue_schedule_notifications("sheet", "hash", 1, "24HR", [1])
     with repository.get_db_connection() as connection:
-        connection.execute(
-            """
-            INSERT INTO notification_types (name) VALUES (?)
-            ON CONFLICT(name) DO NOTHING
-            """,
-            ("lecture_reminder",),
-        )
-        connection.execute(
-            """
-            INSERT INTO notification_preferences (notification_type_id, recipient_id)
-            SELECT id, ? FROM notification_types WHERE name = ?
-            """,
-            (1, "lecture_reminder"),
-        )
         preference = connection.execute(
             """
             SELECT p.id
             FROM notification_preferences p
             JOIN notification_types t ON t.id = p.notification_type_id
-            WHERE t.name = 'lecture_reminder'
+            WHERE t.name = 'reminder'
             """
         ).fetchone()
         connection.execute(
             """
-            INSERT INTO notifications_queue(notification_id, scheduled_for, status_id)
-            VALUES (?, '2026-10-06 08:25:00', 1)
+            INSERT INTO notifications_queue (
+                notification_id, occurrence_key, scheduled_for, expires_at,
+                group_id, target_date, status_id, next_attempt_at,
+                created_at, status_updated_at
+            )
+            VALUES (?, 'reminder-key', 1791246300, 1791249900, 0,
+                    '2026-10-06', 1, 1791246300, 1791246300, 1791246300)
             """,
             (preference["id"],),
         )
@@ -283,7 +274,7 @@ def test_pending_notifications_support_multiple_types_for_one_user() -> None:
     with repository.get_db_connection() as connection:
         rows = connection.execute(
             """
-            SELECT t.name, q.scheduled_for
+            SELECT t.name, q.scheduled_for, q.occurrence_key
             FROM notifications_queue q
             JOIN notification_preferences p ON p.id = q.notification_id
             JOIN notification_types t ON t.id = p.notification_type_id
@@ -292,8 +283,5 @@ def test_pending_notifications_support_multiple_types_for_one_user() -> None:
             """
         ).fetchall()
 
-    assert [row["name"] for row in rows] == [
-        "lecture_reminder",
-        "schedule_change:sheet:hash",
-    ]
-    assert rows[0]["scheduled_for"] == "2026-10-06 08:25:00"
+    assert [row["name"] for row in rows] == ["reminder", "schedule_change"]
+    assert rows[0]["occurrence_key"] == "reminder-key"

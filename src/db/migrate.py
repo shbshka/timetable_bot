@@ -6,6 +6,7 @@ from src.db.migrations import (
     m001_initial_schema,
     m002_optimized_schema,
     m003_add_timezone_and_notification_types,
+    m004_expand_notification_queue,
 )
 from src.utils.logger import get_logger
 
@@ -13,9 +14,8 @@ logger = get_logger("migrations")
 
 initial = m001_initial_schema.InitialSchemaMigration()
 optimized = m002_optimized_schema.OptimizedSchemaMigration()
-timezone_and_notification_types = (
-    m003_add_timezone_and_notification_types.AddTimezoneAndNotificationTypesMigration()
-)
+timezone_and_notification_types = m003_add_timezone_and_notification_types.AddTimezoneAndNotificationTypesMigration()
+expanded_notification_queue = m004_expand_notification_queue.ExpandNotificationQueueMigration()
 
 MIGRATIONS = (
     (initial.version, initial.name, initial.upgrade, initial.downgrade),
@@ -25,6 +25,12 @@ MIGRATIONS = (
         timezone_and_notification_types.name,
         timezone_and_notification_types.upgrade,
         timezone_and_notification_types.downgrade,
+    ),
+    (
+        expanded_notification_queue.version,
+        expanded_notification_queue.name,
+        expanded_notification_queue.upgrade,
+        expanded_notification_queue.downgrade,
     ),
 )
 

@@ -125,6 +125,7 @@ def test_migrations_apply_to_an_isolated_database(tmp_path) -> None:
         (1, "initial_schema"),
         (2, "optimized_schema"),
         (3, "add_timezone_and_notification_types"),
+        (4, "expand_notification_queue"),
     ]
     assert Migration.get_columns(connection, "groups") == {
         "id", "study_form", "enrollment_year", "group_name"
@@ -145,7 +146,7 @@ def test_migrations_are_idempotent_on_an_isolated_database(tmp_path) -> None:
     connection = sqlite3.connect(database_path)
     assert connection.execute(
         "SELECT COUNT(*) FROM schema_migrations"
-    ).fetchone()[0] == 3
+    ).fetchone()[0] == 4
 
 
 def test_downgrade_to_initial_schema_preserves_compatible_data(tmp_path) -> None:
@@ -336,7 +337,7 @@ def test_initial_migration_preserves_legacy_init_db_data(tmp_path) -> None:
         """
     ).fetchone()
     assert notification[:2] == ("schedule_change", 1)
-    assert notification[2] is not None
+    assert isinstance(notification[2], int)
     assert not connection.execute(
         "PRAGMA foreign_key_list(pending_notifications)"
     ).fetchall()
