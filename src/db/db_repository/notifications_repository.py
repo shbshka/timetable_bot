@@ -105,4 +105,8 @@ class NotificationPreferencesRepository(Repository):
                 raise ValueError(
                     f"Notification preference not found for user {user_id}: {pref_type}"
                 )
+
+
+# Left here FOR COMPATIBILITY [double-check it affects nothing when removing]
+NotificationsRepository = NotificationPreferencesRepository
     

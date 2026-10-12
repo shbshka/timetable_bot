@@ -1,18 +1,18 @@
-from datetime import datetime, time, timedelta, timezone
+from datetime import UTC, datetime, time, timedelta
+from typing import ClassVar
 from zoneinfo import ZoneInfo
 
 from src.db import repository
-from src.db.db_repository.notifications_queue_repository import (
-    NotificationQueueRepository,
-)
 from src.db.db_repository.notification_status_repository import (
     NotificationStatusRepository,
+)
+from src.db.db_repository.notifications_queue_repository import (
+    NotificationQueueRepository,
 )
 from src.db.db_repository.notifications_repository import (
     NotificationPreferencesRepository,
 )
 
-UTC = timezone.utc
 
 def resolve_local_time(
     naive: datetime,
@@ -45,7 +45,7 @@ def resolve_local_time(
     return min(forward, key=lambda value: value.replace(tzinfo=None))
 
 class Planner:
-    REGULAR_TYPES = {"daily_schedule", "reminder"}
+    REGULAR_TYPES: ClassVar[set[str]] = {"day_summary", "reminder"}
 
     def __init__(
         self,
@@ -232,7 +232,7 @@ class Planner:
             conn, preference["group_id"], dates,
         )
 
-        if notification_type == "daily_schedule":
+        if notification_type == "day_summary":
             desired = self._daily_occurrences(
                 preference, lectures, dates, now,
             )

@@ -12,9 +12,10 @@ from src.bot.handlers.group import register_group_handlers
 from src.bot.handlers.help import register_help_handler
 from src.bot.handlers.home import register_home_handler
 from src.bot.handlers.language import register_language_handler
+from src.bot.handlers.notifications import register_notification_preferences_handler
 from src.bot.handlers.schedule import register_schedule_handlers
 from src.bot.handlers.start import register_start_handler
-from src.bot.handlers.notifications import register_notification_preferences_handler
+from src.bot.jobs.notifications.dispatcher import create_notification_jobs
 from src.bot.jobs.watcher import (
     check_sheet_updates_job,
     cleanup_schedule_snapshots_job,
@@ -61,6 +62,7 @@ def create_bot_app() -> Application:
 
 
     if app.job_queue:
+        create_notification_jobs(app)
         logger.info(f"Scheduling sheet watcher job (Interval: {CHECK_INTERVAL_SECONDS}s)...")
         app.job_queue.run_repeating(
             check_sheet_updates_job,

@@ -2,7 +2,8 @@ import sqlite3
 import sys
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
+from time import time
 from typing import Any
 
 from config import DB_PATH, SUPPORTED_USER_LOCALES
@@ -11,7 +12,22 @@ from src.parser.models import DaySchedule, Lecture
 from src.utils.logger import get_logger
 
 logger = get_logger("database")
-
+                                                                                                                             
+#        -.+*.+#                         
+#      =:::*#-%%#@                TODO:
+#     +*=+@@@+@@@@@@              rewrite this
+#    +.=@@+   .@@@@@@             god repo (yeah, manually)
+#    @+@@*@@@ @@*@%@@             duh
+#    @%@@.. :-@@%@@@              only bro on the left
+#     @@:   %@@=-%@               is allowed to be a god here
+#      @=+-** =*%**               this ai code
+#       @#-..@#:*#*@@@*= ..-      definitely does not deserve that
+#       @*=#@@+@+##@-    .:-++
+#        %#@%@@%%@@   ..=#*+=++%
+#         .%#%*@@=     -*=-+++*%@
+#  .       %@@=      ...####@@@@@
+#             .     :-+#@%%@%%@@@@
+#.:-=             ..:=@#*@@-::=@@@@
 
 @contextmanager
 def get_db_connection() -> Iterator[sqlite3.Connection]:
@@ -492,43 +508,33 @@ def enqueue_schedule_notifications(
 ) -> None:
     """Persist one pending notification per eligible recipient."""
     with get_db_connection() as conn:
+        now = int(time())
+        occurrence_key = f"{sheet_id}:{content_hash}"
         for chat_id in chat_ids:
             conn.execute(
                 """
-                INSERT INTO notification_types (name)
-                VALUES (?)
-                ON CONFLICT(name) DO NOTHING
-                """,
-                (f"schedule_change:{sheet_id}:{content_hash}",),
-            )
-            conn.execute(
-                """
-                INSERT INTO notification_preferences (notification_type_id, recipient_id)
-                SELECT id, ?
-                FROM notification_types
-                WHERE name = ? AND 1
-                ON CONFLICT(recipient_id, notification_type_id) DO NOTHING
-                """,
-                (chat_id, f"schedule_change:{sheet_id}:{content_hash}"),
-            )
-            preference = conn.execute(
-                """
-                SELECT p.id
+                INSERT INTO notifications_queue (
+                    notification_id, occurrence_key, scheduled_for, expires_at,
+                    group_id, target_date, payload_json, status_id,
+                    next_attempt_at, created_at, status_updated_at
+                )
+                SELECT p.id, ?, ?, ?, ?, ?, '{}', 1, ?, ?, ?
                 FROM notification_preferences p
                 JOIN notification_types t ON t.id = p.notification_type_id
-                WHERE p.recipient_id = ? AND t.name = ?
+                WHERE p.recipient_id = ? AND t.name = 'schedule_change'
+                ON CONFLICT(notification_id, occurrence_key) DO NOTHING
                 """,
-                (chat_id, f"schedule_change:{sheet_id}:{content_hash}"),
-            ).fetchone()
-            conn.execute(
-                """
-                INSERT INTO notifications_queue (
-                    notification_id, scheduled_for, status_id
-                )
-                VALUES (?, CURRENT_TIMESTAMP, 1)
-                ON CONFLICT(notification_id, scheduled_for) DO NOTHING
-                """,
-                (preference["id"],),
+                (
+                    occurrence_key,
+                    now,
+                    now + 86400,
+                    group_id,
+                    datetime.now(UTC).date().isoformat(),
+                    now,
+                    now,
+                    now,
+                    chat_id,
+                ),
             )
 
 
@@ -540,11 +546,12 @@ def has_pending_schedule_notifications(sheet_id: str, content_hash: str) -> bool
             FROM notifications_queue q
             JOIN notification_preferences p ON p.id = q.notification_id
             JOIN notification_types t ON t.id = p.notification_type_id
-            WHERE t.name = ?
+            WHERE t.name = 'schedule_change'
+              AND q.occurrence_key = ?
               AND q.status_id = 1
             LIMIT 1
             """,
-            (f"schedule_change:{sheet_id}:{content_hash}",),
+            (f"{sheet_id}:{content_hash}",),
         ).fetchone()
         return row is not None
 
@@ -560,11 +567,12 @@ def get_pending_schedule_notifications(sheet_id: str, content_hash: str) -> list
             JOIN users u ON u.chat_id = p.recipient_id
             LEFT JOIN groups g ON g.id = u.group_id
             JOIN notification_types t ON t.id = p.notification_type_id
-            WHERE t.name = ?
+            WHERE t.name = 'schedule_change'
+              AND q.occurrence_key = ?
               AND q.status_id = 1
             ORDER BY q.id
             """,
-            (f"schedule_change:{sheet_id}:{content_hash}",),
+            (f"{sheet_id}:{content_hash}",),
         ).fetchall()
         return [dict(row) for row in rows]
 
@@ -574,10 +582,12 @@ def mark_schedule_notification_delivered(notification_id: int) -> None:
         conn.execute(
             """
             UPDATE notifications_queue
-            SET status_id = 2, status_updated_at = CURRENT_TIMESTAMP
+            SET status_id = 3,
+                status_updated_at = ?,
+                delivered_at = ?
             WHERE id = ?
             """,
-            (notification_id,),
+            (int(time()), int(time()), notification_id),
         )
 
 

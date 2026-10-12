@@ -143,6 +143,9 @@ schedule:
       (it takes a while, I confirm them manually).
 
 notifications:
+  reminder_message: |
+    🔔 <b>{subject}</b> at <code>{time}</code>
+    Room: <code>{room}</code>
   prompt: |
     🔔 <b>Notification preferences</b>
 

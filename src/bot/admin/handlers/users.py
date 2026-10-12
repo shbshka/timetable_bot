@@ -119,7 +119,7 @@ async def delete_user_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     if chat_id <= 0:
         await update.effective_message.reply_text(get_user_msg(admin_chat_id, "admin.delete_user_usage"), parse_mode="HTML")
 
-    pass #TODO: implement proper user repository; soft delete?
+    pass #TODO: soft delete?
 
 
 @admin_only

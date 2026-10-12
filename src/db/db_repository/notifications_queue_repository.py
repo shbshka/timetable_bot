@@ -1,4 +1,6 @@
 import json
+from time import time
+from uuid import uuid4
 
 from src.db import repository
 from src.db.db_repository.base import Repository
@@ -27,6 +29,144 @@ class NotificationQueueRepository(Repository):
             ).fetchall()
 
             return [dict(row) for row in rows]
+
+    @staticmethod
+    def claim_due(
+        conn,
+        statuses: dict[str, int],
+        *,
+        now: int | None = None,
+        lease_seconds: int = 300,
+        limit: int = 50,
+    ) -> list[dict]:
+        """Atomically claim due queue rows and return their delivery data."""
+        if lease_seconds < 1 or limit < 1:
+            raise ValueError("Lease and batch size must be positive")
+
+        now = int(time()) if now is None else now
+        token = uuid4().hex
+        conn.execute("BEGIN IMMEDIATE")
+        try:
+            conn.execute(
+                """
+                UPDATE notifications_queue
+                SET status_id = ?, claim_token = NULL, lease_until = NULL,
+                    status_updated_at = ?
+                WHERE status_id = ?
+                  AND lease_until IS NOT NULL
+                  AND lease_until <= ?
+                """,
+                (statuses["pending"], now, statuses["processing"], now),
+            )
+            rows = conn.execute(
+                """
+                SELECT q.*, t.name AS notification_type,
+                       p.recipient_id, u.locale, u.timezone, u.is_banned,
+                       g.group_name
+                FROM notifications_queue q
+                JOIN notification_preferences p ON p.id = q.notification_id
+                JOIN notification_types t ON t.id = p.notification_type_id
+                JOIN users u ON u.chat_id = p.recipient_id
+                LEFT JOIN groups g ON g.id = q.group_id
+                WHERE q.status_id = ?
+                  AND q.next_attempt_at <= ?
+                  AND q.expires_at > ?
+                  AND p.is_enabled = 1
+                  AND u.is_banned = 0
+                  AND (q.claim_token IS NULL OR q.lease_until <= ?)
+                ORDER BY q.next_attempt_at, q.id
+                LIMIT ?
+                """,
+                (
+                    statuses["pending"], now, now, now, limit,
+                ),
+            ).fetchall()
+            claimed = []
+            for row in rows:
+                updated = conn.execute(
+                    """
+                    UPDATE notifications_queue
+                    SET status_id = ?, attempt_count = attempt_count + 1,
+                        claim_token = ?, lease_until = ?,
+                        status_updated_at = ?
+                    WHERE id = ? AND status_id = ?
+                    """,
+                    (
+                        statuses["processing"], token, now + lease_seconds,
+                        now, row["id"], statuses["pending"],
+                    ),
+                )
+                if updated.rowcount:
+                    item = dict(row)
+                    item["_claim_token"] = token
+                    claimed.append(item)
+            conn.commit()
+            return claimed
+        except Exception:
+            conn.rollback()
+            raise
+
+    @staticmethod
+    def mark_delivered(
+        conn,
+        notification_id: int,
+        token: str,
+        *,
+        status_id: int,
+        processing_status_id: int,
+        now: int,
+    ) -> bool:
+        result = conn.execute(
+            """
+            UPDATE notifications_queue
+            SET status_id = ?, claim_token = NULL, lease_until = NULL,
+                status_updated_at = ?, delivered_at = ?
+            WHERE id = ? AND status_id = ? AND claim_token = ?
+            """,
+            (
+                status_id, now, now, notification_id, processing_status_id, token,
+            ),
+        )
+        return result.rowcount == 1
+
+    @staticmethod
+    def mark_failed(
+        conn,
+        notification_id: int,
+        token: str,
+        *,
+        statuses: dict[str, int],
+        now: int,
+        error: str,
+        max_attempts: int,
+    ) -> bool:
+        row = conn.execute(
+            """
+            SELECT attempt_count, expires_at
+            FROM notifications_queue
+            WHERE id = ? AND status_id = ? AND claim_token = ?
+            """,
+            (notification_id, statuses["processing"], token),
+        ).fetchone()
+        if row is None:
+            return False
+
+        terminal = row["attempt_count"] >= max_attempts or now >= row["expires_at"]
+        status = statuses["failed"] if terminal else statuses["pending"]
+        retry_at = now + min(2 ** min(row["attempt_count"], 8), 300)
+        result = conn.execute(
+            """
+            UPDATE notifications_queue
+            SET status_id = ?, next_attempt_at = ?, last_error = ?,
+                claim_token = NULL, lease_until = NULL, status_updated_at = ?
+            WHERE id = ? AND status_id = ? AND claim_token = ?
+            """,
+            (
+                status, retry_at, error[:1000], now,
+                notification_id, statuses["processing"], token,
+            ),
+        )
+        return result.rowcount == 1
 
     @staticmethod
     def expire_pending(conn, statuses: dict, now: int) -> None:
