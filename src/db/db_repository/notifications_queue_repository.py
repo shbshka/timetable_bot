@@ -39,7 +39,15 @@ class NotificationQueueRepository(Repository):
         lease_seconds: int = 300,
         limit: int = 50,
     ) -> list[dict]:
-        """Atomically claim due queue rows and return their delivery data."""
+        """
+        Atomically claim due queue rows and return their delivery data.
+
+        returns: list of claimed queue rows with an additional "_claim_token" field
+
+        raises: 
+            ValueError if lease_seconds or limit are not positive
+            Exception if the database transaction fails
+        """
         if lease_seconds < 1 or limit < 1:
             raise ValueError("Lease and batch size must be positive")
 
@@ -116,6 +124,13 @@ class NotificationQueueRepository(Repository):
         processing_status_id: int,
         now: int,
     ) -> bool:
+        """
+        Mark a notification as delivered if it is currently claimed by the given token.
+
+        Returns:
+            True if the notification was marked as delivered,
+            False if the notification was not found, claimed by a different token, or already terminal.
+        """
         result = conn.execute(
             """
             UPDATE notifications_queue
@@ -140,6 +155,14 @@ class NotificationQueueRepository(Repository):
         error: str,
         max_attempts: int,
     ) -> bool:
+        """
+        Mark a notification as failed, or requeue it if it has remaining attempts.
+        Requeuing is done with exponential backoff, capped at 5 minutes.
+
+        returns: 
+            True if the notification was marked as failed or requeued, 
+            False if it was not found or already terminal
+        """
         row = conn.execute(
             """
             SELECT attempt_count, expires_at

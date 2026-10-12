@@ -7,12 +7,9 @@ from telegram.ext import ContextTypes
 
 from src.bot.jobs.notifications.planner import Planner
 from src.db import repository
-from src.db.db_repository.notification_status_repository import (
-    NotificationStatusRepository,
-)
-from src.db.db_repository.notifications_queue_repository import (
-    NotificationQueueRepository,
-)
+from src.db.db_repository.notification_status_repository import NotificationStatusRepository
+from src.db.db_repository.notifications_queue_repository import NotificationQueueRepository
+
 from src.parser.models import DaySchedule, Lecture
 from src.utils.formatter import format_daily_schedule
 from src.utils.logger import get_logger
@@ -22,7 +19,7 @@ logger = get_logger("jobs")
 
 
 class NotificationDispatcher:
-    """Claims and delivers queued notifications using SQLite as the source of truth."""
+    """Claims and delivers queued notifications using the database as SSOT."""
 
     def __init__(
         self,
@@ -30,7 +27,7 @@ class NotificationDispatcher:
         lease_seconds: int = 300,
         max_attempts: int = 3,
         batch_size: int = 50,
-        clock=time,
+        clock: float = time,
     ) -> None:
         if max_attempts < 1:
             raise ValueError("Maximum attempts must be positive")
@@ -42,7 +39,11 @@ class NotificationDispatcher:
         self.queue_repository = NotificationQueueRepository()
 
     async def dispatch(self, bot) -> int:
-        """Deliver one batch of due notifications and return its size."""
+        """
+        Deliver one batch of due notifications
+
+        returns: size of the batch delivered
+        """
         now = int(self.clock())
         with repository.get_db_connection() as conn:
             statuses = self.status_repository.get_status_ids(conn)
@@ -95,6 +96,13 @@ class NotificationDispatcher:
         return delivered
 
     def _render(self, notification: dict) -> str:
+        """
+        Renders a notification message based on its scheduled date,type, payload, recipient locale and group.
+
+        returns: rendered message string
+        raises: 
+            ValueError if the notification type is unsupported
+        """
         notification_type = notification["notification_type"]
         locale = notification["locale"]
         group_name = notification["group_name"] or str(notification["group_id"])
@@ -109,7 +117,7 @@ class NotificationDispatcher:
             )
 
         if notification_type == "day_summary":
-            lectures = self._get_lectures(
+            lectures = self._get_group_lectures_by_date(
                 notification["group_id"], target_date,
             )
             schedule = [
@@ -146,7 +154,12 @@ class NotificationDispatcher:
         raise ValueError(f"Unsupported notification type: {notification_type}")
 
     @staticmethod
-    def _get_lectures(group_id: int, target_date: str) -> list[Lecture]:
+    def _get_group_lectures_by_date(group_id: int, target_date: str) -> list[Lecture]:
+        """
+        Fetches lectures for a specific group on a given date.
+
+        returns: a list of Lecture objects
+        """
         with repository.get_db_connection() as conn:
             rows = conn.execute(
                 """
@@ -173,10 +186,12 @@ class NotificationDispatcher:
 
 
 def plan_notifications_job(_context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Plans notifications for all users using the Planner."""
     Planner().run_planner()
 
 
 async def dispatch_notifications_job(context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Dispatches due notifications using the NotificationDispatcher."""
     await NotificationDispatcher().dispatch(context.bot)
 
 

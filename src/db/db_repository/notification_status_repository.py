@@ -8,6 +8,13 @@ class NotificationStatusRepository(Repository):
 
     @staticmethod
     def get_status_ids(conn) -> dict[str, int]:
+        """
+        Fetches all notification statuses and their corresponding IDs from the database.
+        
+        returns: dictionary mapping status names to their corresponding IDs
+        
+        raises: ValueError if any required statuses are missing.
+        """
         rows = conn.execute(
             "SELECT id, status FROM notification_status"
         ).fetchall()
