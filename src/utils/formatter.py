@@ -24,9 +24,10 @@ def _format_lecture(lecture: Lecture, locale: str) -> str:
 	time = escape(lecture.time or get_msg("schedule.time_tbd", locale=locale))
 	room_info = f" (Rm {escape(lecture.room)})" if lecture.room else ""
 	teacher_info = f" - <i>{escape(lecture.teacher)}</i>" if lecture.teacher else ""
+	hr_msg = get_msg("schedule.hour", locale=locale)
 	details = []
 	if lecture.hours is not None:
-		details.append(f"{lecture.hours:g}h")
+		details.append(f"{lecture.hours * 0.75:g} {hr_msg}")
 	if lecture.form:
 		details.append(escape(lecture.form))
 	if lecture.delivery_mode:

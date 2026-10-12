@@ -105,6 +105,7 @@ schedule:
     october: "October"
     november: "November"
     december: "December"
+  hour: "h."
   time_tbd: "Time TBD"
   daily: |
     📅 <b>Schedule for {group_name}</b>

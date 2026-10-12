@@ -106,6 +106,7 @@ schedule:
     october: "октября"
     november: "ноября"
     december: "декабря"
+  hour: "ч."
   time_tbd: "Время уточняется"
   daily: |
     📅 <b>Расписание для {group_name}</b>

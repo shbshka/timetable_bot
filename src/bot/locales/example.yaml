@@ -64,6 +64,7 @@ schedule:
     october: "Localized name for October. Variables: none"
     november: "Localized name for November. Variables: none"
     december: "Localized name for December. Variables: none"
+  hour: "Localized abbreviation for hour. Variables: none"
   time_tbd: "Text shown when class time is to be determined. Variables: none"
   daily: "Daily schedule header and date container. Variables: {group_name}, {date_str}"
   weekly: "Weekly schedule header and list container. Variables: {group_name}, {week_schedule}"
