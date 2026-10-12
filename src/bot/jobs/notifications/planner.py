@@ -2,47 +2,18 @@ from datetime import UTC, datetime, time, timedelta
 from typing import ClassVar
 from zoneinfo import ZoneInfo
 
+from config import INSTITUTION_TIMEZONE
+
 from src.db import repository
-from src.db.db_repository.notification_status_repository import (
-    NotificationStatusRepository,
-)
-from src.db.db_repository.notifications_queue_repository import (
-    NotificationQueueRepository,
-)
-from src.db.db_repository.notifications_repository import (
-    NotificationPreferencesRepository,
-)
+from src.db.db_repository.notification_status_repository import NotificationStatusRepository
+from src.db.db_repository.notifications_queue_repository import NotificationQueueRepository
+from src.db.db_repository.notifications_repository import NotificationPreferencesRepository
 
+from src.utils.logger import get_logger
+from src.utils.time import resolve_local_time, utc_now
 
-def resolve_local_time(
-    naive: datetime,
-    timezone_name: str,
-) -> datetime:
-    """First occurrence on overlap; shift forward on a DST gap."""
-    tz = ZoneInfo(timezone_name)
-    valid = {}
-    normalized = []
+logger = get_logger("jobs")
 
-    for fold in (0, 1):
-        candidate = naive.replace(tzinfo=tz, fold=fold)
-        instant = candidate.astimezone(UTC)
-        back = instant.astimezone(tz)
-        normalized.append(back)
-
-        if back.replace(tzinfo=None) == naive:
-            valid[instant] = back
-
-    if valid:
-        return valid[min(valid)]
-
-    forward = [
-        value for value in normalized
-        if value.replace(tzinfo=None) > naive
-    ]
-    if not forward:
-        raise ValueError(f"Cannot resolve local time: {naive}")
-
-    return min(forward, key=lambda value: value.replace(tzinfo=None))
 
 class Planner:
     REGULAR_TYPES: ClassVar[set[str]] = {"day_summary", "reminder"}
@@ -50,7 +21,7 @@ class Planner:
     def __init__(
         self,
         *,
-        institution_timezone: str = "Europe/Vilnius",
+        institution_timezone: ZoneInfo = INSTITUTION_TIMEZONE,
         horizon_days: int = 7,
         retention_days: int = 30,
     ):
@@ -66,20 +37,25 @@ class Planner:
         self.retention_days = retention_days
 
 
-    @staticmethod
-    def _now() -> datetime:
-        return datetime.now(UTC)
+    def _scheduling_horizon(self, now: datetime) -> list[datetime.date]:
+        """
+        Converts the current time to the institution's timezone and generates a list of dates
+        from today to the end of the planning horizon.
 
-
-    def _dates(self, now: datetime):
+        returns: a list of dates from today to the end of the planning horizon
+        """
         first = now.astimezone(self.institution_timezone).date()
         return [
             first + timedelta(days=offset)
             for offset in range(self.horizon_days)
-        ]  
+        ] 
 
 
-    def _get_lectures(self, conn, group_id: int, dates) -> list[dict]:
+    def _get_lectures_for_scheduling_horizon(self, conn, group_id: int, dates) -> list[dict]:
+        """
+        Fetches lectures for a specific group within the scheduling horizon.
+        returns: a list of dictionaries representing the lectures
+        """
         rows = conn.execute(
             """
             SELECT id, source_id, lecture_date, lecture_time,
@@ -96,17 +72,19 @@ class Planner:
         return [dict(row) for row in rows]
 
 
-    def _daily_occurrences(
+    def _daily_summary_occurrences(
         self, preference: dict, lectures: list[dict], dates, now: datetime,
     ) -> list[dict]:
-        if preference["daily_time_local"] is None:
-            raise ValueError(
-                f"Daily time missing for preference {preference['id']}"
-            )
+        """
+        Generates daily summary occurrences for a given preference and lectures.
 
-        delivery_time = time.fromisoformat(
-            preference["daily_time_local"]
-        )
+        returns: a list of dictionaries representing the daily summary occurrences
+        """
+
+        if preference["daily_time_local"] is None:
+            raise ValueError(f"Local daily time missing for preference {preference['id']}.")
+
+        delivery_time = time.fromisoformat(preference["daily_time_local"])
         lecture_dates = {row["lecture_date"] for row in lectures}
         result = []
         now_seconds = int(now.timestamp())
@@ -144,11 +122,19 @@ class Planner:
     def _reminder_occurrences(
         self, preference: dict, lectures: list[dict], now: datetime,
     ) -> list[dict]:
+        """
+        Generates reminder occurrences for a given preference and lectures.
+        Checks for valid reminder lead times, 
+        handles lectures without a specified time,
+        covers DST repeated hour & skipped hour scenarios,
+        ensures reminders are not scheduled in the past.
+        
+        returns: a list of dictionaries representing the reminder occurrences
+        """
+
         minutes = preference["reminder_minutes_before"]
         if minutes is None or not 0 <= minutes <= 1440:
-            raise ValueError(
-                f"Invalid reminder lead time for preference {preference['id']}"
-            )
+            raise ValueError(f"Invalid reminder lead time for preference {preference['id']}")
 
         result = []
         now_seconds = int(now.timestamp())
@@ -162,18 +148,18 @@ class Planner:
                 time.fromisoformat(lecture["lecture_time"]),
             )
             local = naive.replace(tzinfo=self.institution_timezone)
-
             alternative = local.replace(fold=1)
-            roundtrip = local.astimezone(UTC).astimezone(
-                self.institution_timezone
-            )
+
+            roundtrip = local.astimezone(UTC).astimezone(self.institution_timezone)
+
+            # I mean, I have no idea why this should happen, 
+            # but let's be safe if somebody genious messes up AM and PM in the google sheet
+            # (I hate timezones)
             if (
                 roundtrip.replace(tzinfo=None) != naive
                 or local.utcoffset() != alternative.utcoffset()
             ):
-                raise ValueError(
-                    f"Lecture {lecture['id']} has an invalid or ambiguous time"
-                )
+                raise ValueError(f"Lecture {lecture['id']} has an invalid or ambiguous time")
 
             start_at = int(local.astimezone(UTC).timestamp())
             due = start_at - minutes * 60
@@ -203,9 +189,18 @@ class Planner:
 
 
     def _plan_preference(
-        self, conn, preference: dict, statuses: dict, now: datetime,
-        *, replan: bool,
-    ) -> None:
+            self, 
+            conn, 
+            preference: dict, 
+            statuses: dict, 
+            now: datetime, 
+            *, 
+            replan: bool) -> None:
+        """
+        Plans notifications for a specific user preference withing the scheduling horizon,
+        cancelling disabled, nonexistent, or banned preferences.
+        """
+        
         now_seconds = int(now.timestamp())
 
         if (
@@ -213,9 +208,7 @@ class Planner:
             or preference["is_banned"]
             or preference["group_id"] is None
         ):
-            self.notification_queue_repository.cancel_pending(
-                conn, preference["id"], statuses, now_seconds,
-            )
+            self.notification_queue_repository.cancel_pending(conn, preference["id"], statuses, now_seconds)
             return
 
         notification_type = preference["notification_type"]
@@ -227,19 +220,13 @@ class Planner:
                 f"Unsupported notification type: {notification_type}"
             )
 
-        dates = self._dates(now)
-        lectures = self._get_lectures(
-            conn, preference["group_id"], dates,
-        )
+        dates = self._scheduling_horizon(now)
+        lectures = self._get_lectures_for_scheduling_horizon(conn, preference["group_id"], dates)
 
         if notification_type == "day_summary":
-            desired = self._daily_occurrences(
-                preference, lectures, dates, now,
-            )
-        else:
-            desired = self._reminder_occurrences(
-                preference, lectures, now,
-            )
+            desired = self._daily_summary_occurrences(preference, lectures, dates, now)          
+        elif notification_type == "reminder":
+            desired = self._reminder_occurrences(preference, lectures, now)
 
         if not replan:
             existing_due = conn.execute(
@@ -277,51 +264,15 @@ class Planner:
             now=now_seconds,
         )
 
-
-    def _plan(
-        self,
-        *,
-        user_id: int | None = None,
-        notification_type: str | None = None,
-        replan: bool = False,
-    ) -> None:
-        now = self._now()
-
-        with repository.get_db_connection() as conn:
-            conn.execute("BEGIN IMMEDIATE")
-            try:
-                statuses = (
-                    self.notification_status_repository.get_status_ids(conn)
-                )
-                self.notification_queue_repository.expire_pending(
-                    conn, statuses, int(now.timestamp()),
-                )
-
-                preferences = (
-                    self.notifications_repository.get_planning_preferences(
-                        conn, user_id,
-                    )
-                )
-
-                if notification_type is not None:
-                    preferences = [
-                        p for p in preferences
-                        if p["notification_type"] == notification_type
-                    ]
-
-                for preference in preferences:
-                    self._plan_preference(
-                        conn, preference, statuses, now, replan=replan,
-                    )
-
-                conn.commit()
-            except Exception:
-                conn.rollback()
-                raise
-
     
     def cleanup_old_notifications(self) -> int:
-        now = self._now()
+        """
+        Cleans up old notifications from the queue.
+        
+        returns: the count of deleted records
+        """
+        now = utc_now()
+
         now_seconds = int(now.timestamp())
         cutoff = int(
             (now - timedelta(days=self.retention_days)).timestamp()
@@ -330,41 +281,69 @@ class Planner:
         with repository.get_db_connection() as conn:
             conn.execute("BEGIN IMMEDIATE")
             try:
-                statuses = (
-                    self.notification_status_repository.get_status_ids(conn)
-                )
-                self.notification_queue_repository.expire_pending(
-                    conn, statuses, now_seconds,
-                )
-                deleted = (
-                    self.notification_queue_repository.delete_old_terminal(
-                        conn, statuses, cutoff,
-                    )
-                )
+                statuses = self.notification_status_repository.get_status_ids(conn)
+
+                self.notification_queue_repository \
+                    .expire_pending(conn, statuses, now_seconds)
+                
+                deleted = self.notification_queue_repository \
+                    .delete_old_terminal(conn, statuses, cutoff)
+                
                 conn.commit()
                 return deleted
             except Exception:
                 conn.rollback()
+                logger.exception("Failed to cleanup old notifications")
                 raise
 
 
-    def plan_notifications_for_week(self) -> None:
-        self._plan()
-
-
-    def plan_notification_for_week_for_user(
-        self, user_id: int, notification_type: str,
+    def _plan_notifications_for_week(
+        self,
+        *,
+        user_id: int | None = None,
+        notification_type: str | None = None,
+        replan: bool = False,
     ) -> None:
-        self._plan(
-            user_id=user_id,
-            notification_type=notification_type,
-        )
+        """
+        Plans notifications for the upcoming week for all users or a specific user.
+        If user_id is provided, only that user's preferences are planned.
+        """
+        now = utc_now()
+
+        with repository.get_db_connection() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            try:
+                statuses = self.notification_status_repository.get_status_ids(conn)
+                self.notification_queue_repository.expire_pending(conn, statuses, int(now.timestamp()))
+
+                preferences = self.notifications_repository.get_planning_preferences(conn, user_id)
+
+                if notification_type is not None:
+                    preferences = [
+                        p for p in preferences
+                        if p["notification_type"] == notification_type
+                    ]
+
+                for preference in preferences:
+                    self._plan_preference(conn, preference, statuses, now, replan=replan)
+
+                conn.commit()
+            except Exception as e:
+                conn.rollback()
+                raise
 
 
     def replan_notifications_for_user(self, user_id: int) -> None:
-        self._plan(user_id=user_id, replan=True)
+        """
+        Synchronizes notifications for a specific user after changes in their preferences or schedule.
+        """
+        self._plan_notifications_for_week(user_id=user_id, replan=True)
 
 
     def run_planner(self) -> None:
-        self.plan_notifications_for_week()
+        """
+        Runs the notification planner for all users,
+        cleans up old notifications.
+        """
+        self._plan_notifications_for_week()
         self.cleanup_old_notifications()
