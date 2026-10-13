@@ -4,7 +4,7 @@ from datetime import date
 import pytest
 
 from src.db import repository
-from src.db.db_repository.notifications_repository import NotificationsRepository
+from src.db.db_repository.notifications_repository import NotificationPreferencesRepository
 from src.db.migrate import run_migrations
 from src.parser.academic_year import academic_start_year, enrollment_year
 from src.parser.models import Lecture
@@ -164,7 +164,7 @@ def test_start_registration_creates_each_notification_type_once() -> None:
 def test_notification_preference_toggle_updates_database_state() -> None:
     repository.register_user_if_not_exists(42)
 
-    NotificationsRepository.toggle_notification_preference(42, "day_summary")
+    NotificationPreferencesRepository.toggle_notification_preference(42, "day_summary")
     with repository.get_db_connection() as connection:
         first_state = connection.execute(
             """
@@ -176,7 +176,7 @@ def test_notification_preference_toggle_updates_database_state() -> None:
             (42, "day_summary"),
         ).fetchone()["is_enabled"]
 
-    NotificationsRepository.toggle_notification_preference(42, "day_summary")
+    NotificationPreferencesRepository.toggle_notification_preference(42, "day_summary")
     with repository.get_db_connection() as connection:
         second_state = connection.execute(
             """
