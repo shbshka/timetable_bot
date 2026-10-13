@@ -5,7 +5,13 @@ from telegram.ext import (
     TypeHandler,
 )
 
-from config import CHECK_INTERVAL_SECONDS, SNAPSHOT_CLEANUP_INTERVAL_SECONDS, TELEGRAM_BOT_TOKEN
+from config import (
+    CHECK_INTERVAL_SECONDS, 
+    SNAPSHOT_CLEANUP_INTERVAL_SECONDS, 
+    TELEGRAM_BOT_TOKEN,
+    NOTIFICATION_PLANNING_INTERVAL_SECONDS,
+    NOTIFICATION_DISPATCHING_INTERVAL_SECONDS,
+)
 from src.bot.admin.access import block_banned_users
 from src.bot.admin.router import register_admin_handlers
 from src.bot.handlers.group import register_group_handlers
@@ -15,14 +21,14 @@ from src.bot.handlers.language import register_language_handler
 from src.bot.handlers.notifications import register_notification_preferences_handler
 from src.bot.handlers.schedule import register_schedule_handlers
 from src.bot.handlers.start import register_start_handler
-from src.bot.jobs.notifications.dispatcher import create_notification_jobs
 from src.bot.jobs.watcher import (
     check_sheet_updates_job,
     cleanup_schedule_snapshots_job,
     refresh_schedules_on_startup,
 )
+from src.bot.jobs.notifications.dispatcher import dispatch_notifications_job, plan_notifications_job
 from src.db.database import populate_db
-from src.db.migrate import run_migrations
+from src.db.migrate import run_migrations, run_downgrades
 from src.utils.logger import get_logger
 
 logger = get_logger("app")
@@ -62,7 +68,6 @@ def create_bot_app() -> Application:
 
 
     if app.job_queue:
-        create_notification_jobs(app)
         logger.info(f"Scheduling sheet watcher job (Interval: {CHECK_INTERVAL_SECONDS}s)...")
         app.job_queue.run_repeating(
             check_sheet_updates_job,
@@ -70,12 +75,28 @@ def create_bot_app() -> Application:
             first=10,
             name="google_sheets_watcher"
         )
+        logger.info(f"Scheduled sheet watcher job (Interval: {CHECK_INTERVAL_SECONDS}s).")
         app.job_queue.run_repeating(
             cleanup_schedule_snapshots_job,
             interval=SNAPSHOT_CLEANUP_INTERVAL_SECONDS,
             first=10,
             name="schedule_snapshot_cleanup",
         )
+        logger.info(f"Scheduled schedule snapshot cleanup job (Interval: {SNAPSHOT_CLEANUP_INTERVAL_SECONDS}s).")
+        app.job_queue.run_repeating(
+            plan_notifications_job,
+            interval=NOTIFICATION_PLANNING_INTERVAL_SECONDS,
+            first=0,
+            name="notification_planner",
+        )
+        logger.info("Scheduled notification planning job (Interval: 300s).")
+        app.job_queue.run_repeating(
+            dispatch_notifications_job,
+            interval=NOTIFICATION_DISPATCHING_INTERVAL_SECONDS,
+            first=1,
+            name="notification_dispatcher",
+        )
+        logger.debug("Scheduled notification dispatching job (Interval: 10s).")
     else:
         logger.warning("JobQueue not enabled. Automatic sheet watcher will not run.")
 

@@ -32,7 +32,7 @@ class Planner:
         self.notification_status_repository = NotificationStatusRepository()
         self.notification_queue_repository = NotificationQueueRepository()
 
-        self.institution_timezone = ZoneInfo(institution_timezone)
+        self.institution_timezone = institution_timezone
         self.horizon_days = horizon_days
         self.retention_days = retention_days
 
@@ -69,7 +69,10 @@ class Planner:
             (group_id, dates[0].isoformat(), dates[-1].isoformat()),
         ).fetchall()
 
-        return [dict(row) for row in rows]
+        lectures_for_horizon = [dict(row) for row in rows]
+        logger.debug(f"Fetched {len(lectures_for_horizon)} lectures for group {group_id} in the scheduling horizon.")
+
+        return lectures_for_horizon
 
 
     def _daily_summary_occurrences(
@@ -82,7 +85,8 @@ class Planner:
         """
 
         if preference["daily_time_local"] is None:
-            raise ValueError(f"Local daily time missing for preference {preference['id']}.")
+            logger.debug(f"Local daily time missing for preference {preference['id']}. Reverting to defaults.")
+            preference["daily_time_local"] = "10:10:00"
 
         delivery_time = time.fromisoformat(preference["daily_time_local"])
         lecture_dates = {row["lecture_date"] for row in lectures}
@@ -116,6 +120,7 @@ class Planner:
                 "payload": {},
             })
 
+        logger.debug(f"Generated {len(result)} daily summary occurrences for preference {preference['id']}.")
         return result
 
 
@@ -134,7 +139,8 @@ class Planner:
 
         minutes = preference["reminder_minutes_before"]
         if minutes is None or not 0 <= minutes <= 1440:
-            raise ValueError(f"Invalid reminder lead time for preference {preference['id']}")
+            logger.debug(f"Invalid reminder lead time for preference {preference['id']} detected. Reverting to deafults.")
+            minutes = 540
 
         result = []
         now_seconds = int(now.timestamp())
@@ -185,6 +191,7 @@ class Planner:
                 },
             })
 
+        logger.debug(f"Generated {len(result)} reminder occurrences for preference {preference['id']}.")
         return result
 
 
@@ -255,6 +262,7 @@ class Planner:
                     "target_date": row["target_date"],
                     "payload": json.loads(row["payload_json"]),
                 })
+                logger.debug(f"Reusing existing notification: {row['occurrence_key']}")
 
         self.notification_queue_repository.reconcile(
             conn,
@@ -263,6 +271,10 @@ class Planner:
             statuses=statuses,
             now=now_seconds,
         )
+
+        logger.debug(
+            f"Planned {len(desired)} notifications for preference "
+            f"{preference["notification_type"]} {preference["recipient_id"]}.")
 
     
     def cleanup_old_notifications(self) -> int:
@@ -290,6 +302,7 @@ class Planner:
                     .delete_old_terminal(conn, statuses, cutoff)
                 
                 conn.commit()
+                logger.debug(f"Cleaned up {deleted} old notifications from the queue.")
                 return deleted
             except Exception:
                 conn.rollback()
@@ -345,5 +358,7 @@ class Planner:
         Runs the notification planner for all users,
         cleans up old notifications.
         """
+        logger.info("Running notification planner...")
         self._plan_notifications_for_week()
         self.cleanup_old_notifications()
+        logger.info("Notification planning completed successfully.")

@@ -6,6 +6,7 @@ from src.bot.keyboards.notifications import (
     notification_preferences_keyboard,
     notification_preferences_loading_keyboard,
 )
+from src.bot.jobs.notifications.dispatcher import dispatch_notifications_job, plan_notifications_job
 from src.db.db_repository.notifications_repository import NotificationPreferencesRepository
 from src.db.repository import get_user_group_and_tz
 from src.utils.logger import get_logger
@@ -67,6 +68,8 @@ async def toggle_notification_preference(update: Update, context: ContextTypes.D
             raise
 
     NotificationPreferencesRepository.toggle_notification_preference(chat_id, pref_type)
+    # plan_notifications_job(context)
+    # await dispatch_notifications_job(context)
 
     reply_markup = notification_preferences_keyboard(chat_id)
     try:

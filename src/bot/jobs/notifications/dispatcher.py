@@ -93,6 +93,11 @@ class NotificationDispatcher:
                     now=int(self.clock()),
                 ):
                     delivered += 1
+        [
+            logger.info("Dispatched %d notifications", delivered) 
+            if delivered > 0 
+            else logger.debug("No notifications to dispatch")
+        ]
         return delivered
 
     def _render(self, notification: dict) -> str:
@@ -185,7 +190,7 @@ class NotificationDispatcher:
         ]
 
 
-def plan_notifications_job(_context: ContextTypes.DEFAULT_TYPE) -> None:
+async def plan_notifications_job(_context: ContextTypes.DEFAULT_TYPE) -> None:
     """Plans notifications for all users using the Planner."""
     Planner().run_planner()
 
@@ -193,23 +198,4 @@ def plan_notifications_job(_context: ContextTypes.DEFAULT_TYPE) -> None:
 async def dispatch_notifications_job(context: ContextTypes.DEFAULT_TYPE) -> None:
     """Dispatches due notifications using the NotificationDispatcher."""
     await NotificationDispatcher().dispatch(context.bot)
-
-
-def create_notification_jobs(application) -> None:
-    """Register planning and delivery jobs on a Telegram application."""
-    if not application.job_queue:
-        logger.warning("JobQueue not enabled. Notification jobs will not run.")
-        return
-
-    application.job_queue.run_repeating(
-        plan_notifications_job,
-        interval=300,
-        first=0,
-        name="notification_planner",
-    )
-    application.job_queue.run_repeating(
-        dispatch_notifications_job,
-        interval=10,
-        first=1,
-        name="notification_dispatcher",
-    )
+    

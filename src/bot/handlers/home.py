@@ -42,7 +42,7 @@ async def handle_home_button_callbacks(update: Update, context: ContextTypes.DEF
 
     data = query.data
 
-    #TODO: refactor this stuff (please)
+    #TODO: refactor this stuff (please) match case?
     if data == "cmd_change_group":
         await choose_form_command(update, context)
     elif data == "cmd_today":

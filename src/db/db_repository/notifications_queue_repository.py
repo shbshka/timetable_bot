@@ -4,6 +4,9 @@ from uuid import uuid4
 
 from src.db import repository
 from src.db.db_repository.base import Repository
+from src.utils.logger import get_logger
+
+logger = get_logger("database")
 
 
 class NotificationQueueRepository(Repository):
@@ -272,6 +275,7 @@ class NotificationQueueRepository(Repository):
         desired_keys = {
             item["occurrence_key"] for item in occurrences
         }
+        logger.debug(f"Reconciling notifications for preference {preference_id}: {len(existing)} existing, {len(occurrences)} desired.")
 
         for key, row in existing.items():
             if (

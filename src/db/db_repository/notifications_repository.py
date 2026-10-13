@@ -1,6 +1,8 @@
 from src.db import repository
 from src.db.db_repository.base import Repository
+from src.utils.logger import get_logger
 
+logger = get_logger("database")
 
 class NotificationPreferencesRepository(Repository):
     """Repository for managing user notification preferences."""
@@ -29,7 +31,10 @@ class NotificationPreferencesRepository(Repository):
                 (user_id,)
             ).fetchall()
 
-            return {row["name"]: bool(row["is_enabled"]) for row in rows}
+            preferences = {row["name"]: bool(row["is_enabled"]) for row in rows}
+
+        logger.debug(f"Fetched {len(preferences)} notification preferences for user_id {user_id}.")
+        return preferences
 
 
     @staticmethod
@@ -63,17 +68,19 @@ class NotificationPreferencesRepository(Repository):
 
         sql += " ORDER BY p.recipient_id, p.id"
 
-        return [
+        all_preferences = [
             dict(row)
             for row in conn.execute(sql, params).fetchall()
         ]
 
+        logger.debug(f"Fetched {len(all_preferences)} planning notification preferences.")
+        return all_preferences
 
     @staticmethod
     def get_enabled_notifications() -> list[dict]:
         """Return enabled preference records, not just type names."""
         with repository.get_db_connection() as conn:
-            return [
+            enabled_preferences = [
                 preference
                 for preference in (
                     NotificationPreferencesRepository
@@ -83,6 +90,9 @@ class NotificationPreferencesRepository(Repository):
                 and not preference["is_banned"]
                 and preference["group_id"] is not None
             ]
+            
+        logger.debug(f"Fetched {len(enabled_preferences)} enabled notification preferences.")
+        return enabled_preferences
 
 
     @staticmethod
@@ -105,4 +115,6 @@ class NotificationPreferencesRepository(Repository):
                 raise ValueError(
                     f"Notification preference not found for user {user_id}: {pref_type}"
                 )
+
+        logger.debug(f"Toggled notification preference for user {user_id}: {pref_type}")
             
