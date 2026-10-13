@@ -1,3 +1,4 @@
+import asyncio
 import json
 from datetime import UTC, date, datetime
 from time import time
@@ -192,7 +193,7 @@ class NotificationDispatcher:
 
 async def plan_notifications_job(_context: ContextTypes.DEFAULT_TYPE) -> None:
     """Plans notifications for all users using the Planner."""
-    Planner().run_planner()
+    await asyncio.to_thread(Planner().run_planner)
 
 
 async def dispatch_notifications_job(context: ContextTypes.DEFAULT_TYPE) -> None:

@@ -21,6 +21,7 @@ from src.bot.handlers.language import register_language_handler
 from src.bot.handlers.notifications import register_notification_preferences_handler
 from src.bot.handlers.schedule import register_schedule_handlers
 from src.bot.handlers.start import register_start_handler
+from src.bot.handlers.timezone import register_timezone_handler
 from src.bot.jobs.watcher import (
     check_sheet_updates_job,
     cleanup_schedule_snapshots_job,
@@ -65,7 +66,7 @@ def create_bot_app() -> Application:
     register_group_handlers(app)
     register_schedule_handlers(app)
     register_admin_handlers(app)
-
+    register_timezone_handler(app)
 
     if app.job_queue:
         logger.info(f"Scheduling sheet watcher job (Interval: {CHECK_INTERVAL_SECONDS}s)...")

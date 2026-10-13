@@ -21,7 +21,7 @@ def _format_schedule_date(value: datetime, locale: str, include_year: bool) -> s
 
 
 def _format_lecture(lecture: Lecture, locale: str) -> str:
-	time = escape(lecture.time or get_msg("schedule.time_tbd", locale=locale))
+	time = f"{escape(lecture.time or get_msg("schedule.time_tbd", locale=locale))} {get_msg("timezone.labels.vilnius", locale=locale)}"
 	room_info = f" (Rm {escape(lecture.room)})" if lecture.room else ""
 	teacher_info = f" - <i>{escape(lecture.teacher)}</i>" if lecture.teacher else ""
 	hr_msg = get_msg("schedule.hour", locale=locale)
