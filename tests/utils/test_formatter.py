@@ -13,7 +13,7 @@ def test_schedule_formatters_emit_html_and_escape_lecture_values() -> None:
             lectures=[
                 Lecture(
                     date=lecture_date,
-                    time="08:30-10:00",
+                    time="08:30",
                     subject="Algorithms <advanced>",
                     teacher="A & B",
                     form="HR",
@@ -27,7 +27,7 @@ def test_schedule_formatters_emit_html_and_escape_lecture_values() -> None:
     weekly = format_weekly_schedule("24HR", schedule, locale="en")
 
     # Assert
-    assert "<code>08:30-10:00</code>" in daily
+    assert "<code>08:30</code>" in daily
     assert "<b>Algorithms &lt;advanced&gt;</b>" in daily
     assert "<i>A &amp; B</i>" in daily
     assert "<b>monday, 05 October</b>" in weekly

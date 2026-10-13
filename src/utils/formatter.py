@@ -21,7 +21,7 @@ def _format_schedule_date(value: datetime, locale: str, include_year: bool) -> s
 
 
 def _format_lecture(lecture: Lecture, locale: str) -> str:
-	time = f"{escape(lecture.time or get_msg("schedule.time_tbd", locale=locale))} {get_msg("timezone.labels.vilnius", locale=locale)}"
+	time = f"{escape(lecture.time or get_msg("schedule.time_tbd", locale=locale))}"
 	room_info = f" (Rm {escape(lecture.room)})" if lecture.room else ""
 	teacher_info = f" - <i>{escape(lecture.teacher)}</i>" if lecture.teacher else ""
 	hr_msg = get_msg("schedule.hour", locale=locale)
@@ -33,7 +33,7 @@ def _format_lecture(lecture: Lecture, locale: str) -> str:
 	if lecture.delivery_mode:
 		details.append(escape(lecture.delivery_mode))
 	detail_text = f" ({', '.join(details)})" if details else ""
-	return f"- <code>{time}</code> | <b>{escape(lecture.subject)}</b>{room_info}{teacher_info}{detail_text}\n"
+	return f"- <code>{time}</code> {get_msg("timezone.labels.vilnius", locale=locale)} | <b>{escape(lecture.subject)}</b>{room_info}{teacher_info}{detail_text}\n"
 
 
 def format_daily_schedule(group_name: str, date: datetime, schedule: list[DaySchedule], locale: str = "ru") -> str:
