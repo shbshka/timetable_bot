@@ -5,6 +5,7 @@ from contextlib import contextmanager
 from datetime import UTC, date, datetime, timedelta
 from time import time
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from config import DB_PATH, SUPPORTED_USER_LOCALES
 from src.parser.academic_year import enrollment_year
@@ -160,7 +161,9 @@ def get_user_schedule_context(chat_id: int) -> dict[str, Any] | None:
                 g.study_form,
                 g.enrollment_year,
                 sg.id AS spreadsheet_db_id,
-                s.sheet_id
+                s.sheet_id,
+                u.locale,
+                u.timezone
             FROM users u
             JOIN groups g ON u.group_id = g.id
             LEFT JOIN spreadsheets_groups sg
@@ -170,6 +173,38 @@ def get_user_schedule_context(chat_id: int) -> dict[str, Any] | None:
         """, (chat_id,))
         row = cursor.fetchone()
         return dict(row) if row else None
+
+
+#TODO: modify get_user_group_and_tz() to use left join and get rid of this stuff
+def get_user_timezone(chat_id: int) -> str | None:
+    """Fetches the user's timezone from the database."""
+    with get_db_connection() as conn:
+        row = conn.execute("SELECT timezone FROM users WHERE chat_id = ?", (chat_id,)).fetchone()
+        return row["timezone"] if row else None
+
+
+def set_user_timezone(chat_id: int, timezone: str) -> None:
+    """
+    Validates and sets the user's timezone in the database.
+    """
+    if not timezone:
+        raise ValueError("Timezone cannot be empty.")
+
+    try:
+        _ = ZoneInfo(timezone)
+    except ZoneInfoNotFoundError as exc:
+        logger.error(f"Failed to create ZoneInfo for {timezone}: {exc}")
+        raise ValueError(f"Invalid timezone: {timezone}") from exc
+    
+    with get_db_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO users (chat_id, timezone)
+            VALUES (?, ?)
+            ON CONFLICT(chat_id) DO UPDATE SET timezone = excluded.timezone
+            """,
+            (chat_id, timezone),
+        )
 
     
 def get_group_by_id(group_id: int) -> dict[str, Any] | None:
