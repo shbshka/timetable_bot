@@ -86,7 +86,7 @@ class Planner:
 
         if preference["daily_time_local"] is None:
             logger.debug(f"Local daily time missing for preference {preference['id']}. Reverting to defaults.")
-            preference["daily_time_local"] = "10:10:00"
+            preference["daily_time_local"] = "09:30:00"
 
         delivery_time = time.fromisoformat(preference["daily_time_local"])
         lecture_dates = {row["lecture_date"] for row in lectures}
@@ -140,7 +140,7 @@ class Planner:
         minutes = preference["reminder_minutes_before"]
         if minutes is None or not 0 <= minutes <= 1440:
             logger.debug(f"Invalid reminder lead time for preference {preference['id']} detected. Reverting to deafults.")
-            minutes = 540
+            minutes = 30
 
         result = []
         now_seconds = int(now.timestamp())
