@@ -25,6 +25,7 @@ def main() -> None:
         logger.info("Bot successfully initialized. Starting polling loop...")
 
         app.run_polling(drop_pending_updates=True)
+        logger.info("Polling stopped; application shutdown completed.")
 
     except KeyboardInterrupt:
         logger.info("Bot execution interrupted by user (Ctrl+C). Shutting down...")

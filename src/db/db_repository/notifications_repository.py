@@ -1,0 +1,120 @@
+from src.db import repository
+from src.db.db_repository.base import Repository
+from src.utils.logger import get_logger
+
+logger = get_logger("database")
+
+class NotificationPreferencesRepository(Repository):
+    """Repository for managing user notification preferences."""
+
+    @property
+    def table_name(self) -> str:
+        return "notification_preferences"
+
+
+    @staticmethod
+    def get_notification_preferences_by_user_id(user_id: int) -> dict[str, bool]:
+        """
+        Fetches notification preferences for a specific user by their ID.
+        Returns a dictionary "name": name of the notification type, "is_enabled": True/False
+        """
+
+        with repository.get_db_connection() as conn:
+            rows = conn.execute(
+                """
+                SELECT t.name, p.is_enabled
+                FROM notification_preferences p
+                JOIN notification_types t ON t.id = p.notification_type_id
+                WHERE p.recipient_id = ?
+                ORDER BY t.id
+                """,
+                (user_id,)
+            ).fetchall()
+
+            preferences = {row["name"]: bool(row["is_enabled"]) for row in rows}
+
+        logger.debug(f"Fetched {len(preferences)} notification preferences for user_id {user_id}.")
+        return preferences
+
+
+    @staticmethod
+    def get_planning_preferences(
+        conn,
+        user_id: int | None = None,
+    ) -> list[dict]:
+        sql = """
+            SELECT
+                p.id,
+                p.recipient_id,
+                p.is_enabled,
+                p.daily_time_local,
+                p.reminder_minutes_before,
+                p.send_empty_schedule,
+                t.name AS notification_type,
+                u.group_id,
+                u.timezone,
+                u.is_banned
+            FROM notification_preferences p
+            JOIN notification_types t
+              ON t.id = p.notification_type_id
+            JOIN users u
+              ON u.chat_id = p.recipient_id
+        """
+        params = ()
+
+        if user_id is not None:
+            sql += " WHERE p.recipient_id = ?"
+            params = (user_id,)
+
+        sql += " ORDER BY p.recipient_id, p.id"
+
+        all_preferences = [
+            dict(row)
+            for row in conn.execute(sql, params).fetchall()
+        ]
+
+        logger.debug(f"Fetched {len(all_preferences)} planning notification preferences.")
+        return all_preferences
+
+    @staticmethod
+    def get_enabled_notifications() -> list[dict]:
+        """Return enabled preference records, not just type names."""
+        with repository.get_db_connection() as conn:
+            enabled_preferences = [
+                preference
+                for preference in (
+                    NotificationPreferencesRepository
+                    .get_planning_preferences(conn)
+                )
+                if preference["is_enabled"]
+                and not preference["is_banned"]
+                and preference["group_id"] is not None
+            ]
+            
+        logger.debug(f"Fetched {len(enabled_preferences)} enabled notification preferences.")
+        return enabled_preferences
+
+
+    @staticmethod
+    def toggle_notification_preference(user_id: int, pref_type: str) -> None:
+        """Toggle one notification preference for the user."""
+
+        with repository.get_db_connection() as conn:
+            result = conn.execute(
+                """
+                UPDATE notification_preferences
+                SET is_enabled = CASE is_enabled WHEN 1 THEN 0 ELSE 1 END
+                WHERE recipient_id = ?
+                  AND notification_type_id = (
+                      SELECT id FROM notification_types WHERE name = ?
+                  )
+                """,
+                (user_id, pref_type),
+            )
+            if result.rowcount != 1:
+                raise ValueError(
+                    f"Notification preference not found for user {user_id}: {pref_type}"
+                )
+
+        logger.debug(f"Toggled notification preference for user {user_id}: {pref_type}")
+            

@@ -141,15 +141,11 @@ def _hours(value: str) -> float | None:
 
 
 def _normalized_time(note: str) -> str | None:
-    matches = [f"{hour.zfill(2)}:{minute}" for hour, minute in _TIME_RE.findall(note)]
-    if not matches:
-        return None
-    if len(matches) == 1:
-        return matches[0]
-    intervals = [f"{matches[index]}-{matches[index + 1]}" for index in range(0, len(matches) - 1, 2)]
-    if len(matches) % 2:
-        intervals.append(matches[-1])
-    return ", ".join(intervals)
+    matches = [
+        f"{hour.zfill(2)}:{minute}"
+        for hour, minute in _TIME_RE.findall(note)
+    ]
+    return ", ".join(matches[::2]) if matches else None
 
 
 def _course_year(value: str) -> int | None:
@@ -252,21 +248,42 @@ def parse_all_schedule_grid(grid: ScheduleGrid) -> list[Lecture]:
             session_hours = _hours(values[column]) if column < len(values) else None
             if session_hours is None or column not in date_by_column:
                 continue
+
             cell_note = row[column].get("note", "").strip()
-            lectures.append(
-                Lecture(
-                    date=date_by_column[column],
-                    time=_normalized_time(cell_note),
-                    subject=active_subject,
-                    form=active_form,
-                    hours=session_hours,
-                    course_year=active_year,
-                    level=active_level,
-                    delivery_mode=active_mode,
-                    course_notes=active_course_notes,
-                    cell_note=cell_note or None,
-                )
+            normalized_time = _normalized_time(cell_note)
+
+            start_time = (
+                datetime.strptime(normalized_time.split(",")[0].strip(), "%H:%M")
+                if normalized_time
+                else None
             )
+            academic_hours_per_lecture = 2
+            lecture_duration = timedelta(
+                minutes=academic_hours_per_lecture * 45
+            )
+            break_duration = timedelta(minutes=10)
+
+            for index in range(int(session_hours / academic_hours_per_lecture)):
+                lecture_start = (
+                    start_time + index * (lecture_duration + break_duration)
+                    if start_time is not None
+                    else None
+                )
+                        
+                lectures.append(
+                    Lecture(
+                        date=date_by_column[column],
+                        time=lecture_start.strftime("%H:%M") if lecture_start else None,
+                        subject=active_subject,
+                        form=active_form,
+                        hours=academic_hours_per_lecture,
+                        course_year=active_year,
+                        level=active_level,
+                        delivery_mode=active_mode,
+                        course_notes=active_course_notes,
+                        cell_note=cell_note or None,
+                    )
+                )
 
     return lectures
 

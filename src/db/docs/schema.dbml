@@ -72,11 +72,17 @@ Table users {
     name text
     locale text [not null, default: 'ru']
     is_banned boolean [not null, default: `false`]
+    timezone text [not null, default: 'Europe/Vilnius']
     created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
 
     checks {
         `locale IN ('ru', 'en')`
         `is_banned IN (0, 1)`
+        `timezone GLOB '[A-Za-z]*/*'`
+        `timezone NOT GLOB '*[^A-Za-z0-9_+./-]*'`
+        `timezone NOT GLOB '/*'`
+        `timezone NOT GLOB '*/'`
+        `timezone NOT GLOB '*//*'`
     }
 
     indexes {
@@ -85,40 +91,96 @@ Table users {
 }
 Ref: users.group_id > groups.id [delete: set null]
 
-Table notification_preferences {
+Table notification_types {
     id integer [primary key]
-    type text [not null]
-    recipient_id integer [not null]
-    is_enabled boolean [not null, default: `true`]
+    name text [not null, unique]
 
     checks {
-        `type != ''`
+        `name IN ('schedule_change', 'day_summary', 'reminder')`
+    }
+}
+
+Table notification_preferences {
+    id integer [primary key]
+    notification_type_id integer [not null]
+    recipient_id integer [not null]
+    is_enabled boolean [not null, default: false]
+
+    daily_time_local text
+    reminder_minutes_before integer
+    send_empty_schedule boolean [not null, default: false]
+
+    checks {
         `is_enabled IN (0, 1)`
+        `send_empty_schedule IN (0, 1)`
+        `daily_time_local IS NULL OR (
+            length(daily_time_local) = 5
+            AND daily_time_local GLOB '[0-2][0-9]:[0-5][0-9]'
+            AND daily_time_local <= '23:59'
+        )`
+        `reminder_minutes_before IS NULL OR
+            reminder_minutes_before BETWEEN 0 AND 1440`
     }
 
     indexes {
-        (recipient_id, type) [unique]
+        (recipient_id, notification_type_id) [unique]
     }
 }
+Ref: notification_preferences.notification_type_id > notification_types.id [delete: cascade, update: no action]
 Ref: notification_preferences.recipient_id > users.chat_id [delete: cascade, update: no action]
 
 Table notification_status {
     id integer [primary key]
     status text [not null, unique]
+
+    checks {
+        `status IN ('pending', 'processing', 'delivered', 'cancelled', 'expired', 'failed')`
+    }
 }
 
 Table notifications_queue {
     id integer [primary key]
     notification_id integer [not null]
-    scheduled_for timestamp [not null]
+
+    occurrence_key text [not null]
+
+    scheduled_for integer [not null]
+    expires_at integer [not null]
+
+    group_id integer [not null]
+    target_date text [not null]
+    payload_json text [not null, default: '{}']
+
     status_id integer [not null]
-    status_updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+
+    attempt_count integer [not null, default: 0]
+    next_attempt_at integer [not null]
+    last_error text
+
+    claim_token text
+    lease_until integer
+
+    created_at integer [not null]
+    status_updated_at integer [not null]
+    delivered_at integer
+
+    checks {
+    `occurrence_key != ''`
+    `attempt_count >= 0`
+    `expires_at > scheduled_for`
+    `next_attempt_at >= scheduled_for`
+    `(claim_token IS NULL AND lease_until IS NULL)
+        OR (claim_token IS NOT NULL AND lease_until IS NOT NULL)`
+    }
 
     indexes {
-        (notification_id, scheduled_for) [unique]
+        (notification_id, occurrence_key) [unique]
+        (status_id, next_attempt_at)
+        (status_id, lease_until)
     }
 }
 Ref: notifications_queue.notification_id > notification_preferences.id [delete: cascade, update: no action]
+
 Ref: notifications_queue.status_id > notification_status.id [delete: restrict, update: no action]
 
 Table pending_spreadsheets {

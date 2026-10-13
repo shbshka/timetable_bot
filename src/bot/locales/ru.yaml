@@ -3,6 +3,7 @@ start:
     👋 С возвращением, <b>{first_name}</b>!
 
     📌 <b>Текущая группа:</b> <code>{group_name}</code>
+    🕒 <b>Текущее время:</b> <code>{timezone}</code>
 
     Быстрые команды:
     • /today — Расписание на сегодня
@@ -23,11 +24,14 @@ start:
 help: |
   Никто тебе здесь не поможет, кроме тебя самого 🗿
   (можно пнуть меня по @shoobec)
-  Быстрые команды:
+  Команды:
+  • /home — Главное меню
   • /today — Расписание на сегодня
   • /week — Расписание на неделю
   • /group — Изменить группу
   • /language — Изменить язык
+  • /timezone — Изменить часовой пояс
+  • /notifications — Изменить настройки уведомлений
   • /help — Помощь и настройки
 
 btns:
@@ -37,12 +41,43 @@ btns:
   btn_current_week: "📅 Текущая неделя"
   btn_change_group: "⚙️ Сменить группу"
   btn_select_group: "🎓 Выбрать группу"
+  btn_notification_preferences: "🔔 Уведомления"
   btn_language: "🌐 Язык / Language"
+  btn_timezone: "🕒 Часовой пояс"
   btn_home: "🏠 Главное меню"
+
+  btn_enabled: "✅ вкл."
+  btn_disabled: "🟥 выкл."
+  btn_loading: "⏳..."
 
 language:
   prompt: "Выберите язык интерфейса:"
   changed: "Язык интерфейса: {language}."
+
+timezone:
+  prompt: |
+    🕒 <b>Часовой пояс</b>
+
+    Выберите часовой пояс, в котором будет отображаться расписание.
+  current: "🕒 Часовой пояс: {timezone}."
+  updated: |
+    🕒 Часовой пояс успешно изменён на <code>{timezone}</code>.
+
+    Выберите часовой пояс, в котором будет отображаться расписание.
+  labels:
+    london: "Лондон (GMT/BST)"
+    berlin: "Берлин (CET/CEST)"
+    warsaw: "Варшава / Краков (CET/CEST)"
+    vilnius: "Вильнюс (EET/EEST)"
+    kyiv: "Киев (EET/EEST)"
+    bucharest: "Бухарест (EET/EEST)"
+    moscow: "Москва / Санкт-Петербург (MSK)"
+    yerevan: "Ереван (AMT)"
+    tbilisi: "Тбилиси (GET)"
+    yekaterinburg: "Екатеринбург (YEKT)"
+    almaty: "Алматы"
+    tashkent: "Ташкент"
+  add: ""
 
 group:
   choose_form:
@@ -95,6 +130,7 @@ schedule:
     october: "октября"
     november: "ноября"
     december: "декабря"
+  hour: "ч."
   time_tbd: "Время уточняется"
   daily: |
     📅 <b>Расписание для {group_name}</b>
@@ -132,6 +168,25 @@ schedule:
       Есть ссылка на него? Отправьте ее ответным сообщением и подождите
       (долго, я руками подтверждаю).
 
+notifications:
+  reminder_message: |
+    🔔 <b>{subject}</b> в <code>{time}</code>
+    Аудитория: <code>{room}</code>
+  prompt: |
+    🔔 <b>Настройки уведомлений</b>
+    
+    📌 Группа: <code>{group_name}</code>
+    🕒 Время: <code>{timezone}</code>
+
+    Для переключения уведомлений нажмите на соответствующий переключатель
+    (и подождите, пока он поменяется)
+
+    <b>Выберите, какие уведомления вы хотите получать:</b>
+  types:
+    schedule_change: "Изменения в расписании"
+    day_summary: "Расписание на день"
+    reminder: "Напоминание о парах"
+
 error:
   schedule_fetch_failed: |
     Да емае
@@ -139,6 +194,8 @@ error:
     Ради бога, не тыкайте кнопки, мне уже пришло уведомление, я буду разбираться.
   session_expired: |
     ⚠️ Сессия истекла. Отправьте последнюю команду и начните заново.
+  unclickable: "BRUH 🗿➡️"
+  not_implemented: "⚠️ Функция в разработке. Пишите @shoobec че там надо, я руками сделаю."
 
 admin:
   unauthorized:

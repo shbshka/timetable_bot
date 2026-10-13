@@ -31,5 +31,5 @@ def test_start_keyboard_changes_actions_based_on_group_state() -> None:
     ungrouped_callbacks = [button.callback_data for row in ungrouped.inline_keyboard for button in row]
 
     # Assert
-    assert grouped_callbacks == ["cmd_today", "cmd_change_group", "cmd_language"]
+    assert grouped_callbacks == ["cmd_today", "cmd_tomorrow", "cmd_week","cmd_change_group", "cmd_notification_preferences", "cmd_timezone","cmd_language"]
     assert ungrouped_callbacks == ["start_group_setup", "cmd_language"]

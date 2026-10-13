@@ -1,9 +1,9 @@
-from telegram import Update
+from telegram import InlineKeyboardMarkup, Update
 from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
 
 from src.bot.handlers.group import choose_form_command
 from src.bot.handlers.language import language_command
-from src.bot.keyboards.start import main_menu_keyboard
+from src.bot.keyboards.start import home_keyboard, main_menu_keyboard
 from src.db.repository import get_user_schedule_context, register_user_if_not_exists
 from src.utils.logger import get_logger
 
@@ -35,12 +35,14 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             chat_id,
             "start.welcome_back", 
             first_name=first_name, 
-            group_name=user_context["group_name"]
+            group_name=user_context["group_name"],
+            timezone=user_context["timezone"],
         )
+        #TODO: refactor this to use a single function for generating the keyboard
+        reply_markup = InlineKeyboardMarkup(home_keyboard(chat_id))
     else:
         welcome_text = get_user_msg(chat_id, "start.welcome_new", first_name=first_name)
-
-    reply_markup = main_menu_keyboard(chat_id, bool(user_context and user_context.get("group_name")))
+        reply_markup = main_menu_keyboard(chat_id, bool(user_context and user_context.get("group_name")))
 
     if update.message:
             await update.message.reply_text(welcome_text, reply_markup=reply_markup, parse_mode="HTML")
@@ -55,19 +57,13 @@ async def handle_start_button_callbacks(update: Update, context: ContextTypes.DE
 
     data = query.data
 
-    #TODO: refactor this stuff (please)
     if data == "cmd_language":
         await language_command(update, context)
-    elif data in ("start_group_setup", "cmd_change_group"):
+    elif data == "start_group_setup":
         await choose_form_command(update, context)
-    elif data == "cmd_today":
-        from src.bot.handlers.schedule import today_command
-        await today_command(update, context)
-    elif data == "cmd_home":
-        await start_command(update, context)
 
 
 def register_start_handler(app) -> None:
     """Registers handlers for /start command and its inline buttons."""
     app.add_handler(CommandHandler("start", start_command))
-    app.add_handler(CallbackQueryHandler(handle_start_button_callbacks, pattern="^(start_group_setup|cmd_change_group|cmd_today|cmd_language|cmd_home)$"))
+    app.add_handler(CallbackQueryHandler(handle_start_button_callbacks, pattern="^(start_group_setup|cmd_language)$"))

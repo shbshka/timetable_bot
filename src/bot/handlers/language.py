@@ -34,7 +34,24 @@ async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         await query.answer()
         return
 
+    first_name = update.effective_user.first_name or "Student"
     chat_id = update.effective_chat.id
+    user_context = get_user_schedule_context(chat_id)
+    has_group = user_context and user_context.get("group_name")
+
+    if has_group:
+        reply_text = get_user_msg(
+            chat_id,
+            "start.welcome_back", 
+            first_name=first_name, 
+            group_name=user_context["group_name"],
+            timezone=user_context["timezone"],
+        )
+        reply_markup = main_menu_keyboard(chat_id, has_group)
+    else:
+        reply_text = get_user_msg(chat_id, "start.welcome_new", first_name=first_name)
+        reply_markup = main_menu_keyboard(chat_id, has_group)
+
     set_user_locale(chat_id, locale)
     logger.info(f"User {chat_id} changed language to {locale}")
 
@@ -43,8 +60,9 @@ async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
     await query.answer()
     await query.edit_message_text(
-        get_user_msg(chat_id, "language.changed", language=LANGUAGE_NAMES[locale]),
-        reply_markup=main_menu_keyboard(chat_id, bool(user_context and user_context.get("group_name"))),
+        reply_text + "\n" + get_user_msg(chat_id, "language.changed", language=LANGUAGE_NAMES[locale]),
+        reply_markup=reply_markup,
+        parse_mode="HTML",
     )
 
 

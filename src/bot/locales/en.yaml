@@ -3,6 +3,7 @@ start:
     👋 Welcome back, <b>{first_name}</b>!
 
     📌 <b>Current group:</b> <code>{group_name}</code>
+    🕒 <b>Current time:</b> <code>{timezone}</code>
 
     Quick commands:
     • /today — Today's schedule
@@ -24,10 +25,13 @@ help: |
   No one here can help you except yourself 🗿
   (you can ping me at @shoobec)
   Quick commands:
+  • /home — Main menu
   • /today — Today's schedule
   • /week — Schedule for the week
   • /group — Change group
   • /language — Change language
+  • /timezone — Change timezone
+  • /notifications — Change notification settings
   • /help — Help & settings
 
 btns:
@@ -37,12 +41,42 @@ btns:
   btn_current_week: "📅 Current week"
   btn_change_group: "⚙️ Change group"
   btn_select_group: "🎓 Select group"
+  btn_notification_preferences: "🔔 Notification preferences"
   btn_language: "🌐 Язык / Language"
+  btn_timezone: "🕒 Timezone"
   btn_home: "🏠 Main menu"
+
+  btn_enabled: "✅ on"
+  btn_disabled: "🟥 off"
 
 language:
   prompt: "Select interface language:"
   changed: "Interface language: {language}."
+
+timezone:
+  prompt: |
+    🕒 <b>Timezone</b>
+
+    Select the timezone in which the schedule will be displayed.
+  current: "🕒 Timezone: {timezone}."
+  updated: |
+    🕒 Timezone successfully changed to {timezone}.
+
+    Select the timezone in which the schedule will be displayed.
+  labels:
+    london: "London (GMT/BST)"
+    berlin: "Berlin (CET/CEST)"
+    warsaw: "Warsaw / Krakow (CET/CEST)"
+    vilnius: "Vilnius (EET/EEST)"
+    kyiv: "Kyiv (EET/EEST)"
+    bucharest: "Bucharest (EET/EEST)"
+    moscow: "Moscow / St. Petersburg (MSK)"
+    yerevan: "Yerevan (AMT)"
+    tbilisi: "Tbilisi (GET)"
+    yekaterinburg: "Yekaterinburg (YEKT)"
+    almaty: "Almaty"
+    tashkent: "Tashkent"
+  add: ""
 
 group:
   choose_form:
@@ -95,6 +129,7 @@ schedule:
     october: "October"
     november: "November"
     december: "December"
+  hour: "h."
   time_tbd: "Time TBD"
   daily: |
     📅 <b>Schedule for {group_name}</b>
@@ -132,6 +167,25 @@ schedule:
       Got a link to it? Send it as a reply and wait a bit
       (it takes a while, I confirm them manually).
 
+notifications:
+  reminder_message: |
+    🔔 <b>{subject}</b> at <code>{time}</code>
+    Room: <code>{room}</code>
+  prompt: |
+    🔔 <b>Notification preferences</b>
+
+    📌 Group: <code>{group_name}</code>
+    🕒 Timezone: <code>{timezone}</code>
+    
+    To toggle notifications, click the corresponding switch
+    (and wait for it to change)
+
+    <b>Select which notifications you want to receive:</b>
+  types:
+    schedule_change: "Schedule changes"
+    day_summary: "Daily schedule summary"
+    reminder: "Reminder notification"
+
 error:
   schedule_fetch_failed: |
     Oh, come on
@@ -139,6 +193,8 @@ error:
     For goodness' sake, stop clicking the buttons, I already received a notification and I'm looking into it.
   session_expired: |
     ⚠️ Session expired. Send the last command again and restart.
+  unclickable: "BRUH 🗿➡️"
+  not_implemented: "⚠️ Feature under development. Please contact @shoobec on the issue (if any)."
 
 admin:
   unauthorized:

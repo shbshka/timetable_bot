@@ -6,7 +6,7 @@
 # ====================================================================================
 
 start:
-  welcome_back: "Welcome message for returning users. Variables: {first_name}, {group_name}"
+  welcome_back: "Welcome message for returning users. Variables: {first_name}, {group_name}, {timezone}"
   welcome_new: "Welcome message for new users prompting group selection. Variables: {first_name}"
 
 help: "Help text and general support information. Variables: none"
@@ -17,12 +17,24 @@ btns:
   btn_week: "Text for 'Full Week' schedule button. Variables: none"
   btn_change_group: "Text for 'Change Group' button. Variables: none"
   btn_select_group: "Text for 'Select Group' button. Variables: none"
+  btn_notification_preferences: "Text for 'Notification Preferences' button. Variables: none"
   btn_language: "Text for 'Language' button. Variables: none"
+  btn_timezone: "Text for 'Timezone' button. Variables: none"
   btn_home: "Text for 'Main Menu' navigation button. Variables: none"
+
+  btn_enabled: "Text for 'Enabled' status button. Variables: none"
+  btn_disabled: "Text for 'Disabled' status button. Variables: none"
 
 language:
   prompt: "Prompt for selecting interface language. Variables: none"
   changed: "Confirmation message after changing interface language. Variables: {language}"
+
+timezone:
+  prompt: "Prompt for selecting timezone. Variables: none"
+  current: "Confirmation message showing current timezone. Variables: {timezone}"
+  updated: "Confirmation message after changing timezone. Variables: {timezone}"
+  labels: "List labels for timezone selection buttons under this section. Variables: none"
+  add: "Text for 'Add your timezone' button. Variables: none"
 
 group:
   choose_form:
@@ -55,6 +67,7 @@ schedule:
     october: "Localized name for October. Variables: none"
     november: "Localized name for November. Variables: none"
     december: "Localized name for December. Variables: none"
+  hour: "Localized abbreviation for hour. Variables: none"
   time_tbd: "Text shown when class time is to be determined. Variables: none"
   daily: "Daily schedule header and date container. Variables: {group_name}, {date_str}"
   weekly: "Weekly schedule header and list container. Variables: {group_name}, {week_schedule}"
@@ -69,9 +82,18 @@ schedule:
     notification_failed: "Error when notification to admin fails. Variables: none"
     not_found: "Error message when schedule is not found in database. Variables: {group_name}"
 
+notifications:
+  prompt: "Prompt for notification preferences. Variables: {group_name}, {timezone}"
+  types:
+    daily_schedule: "Description for daily schedule notification type. Variables: none"
+    weekly_schedule: "Description for weekly schedule notification type. Variables: none"
+    schedule_updates: "Description for schedule updates notification type. Variables: none"
+
 error:
   schedule_fetch_failed: "Error message when fetching schedule fails. Variables: none"
   session_expired: "Message when user interactive session expires. Variables: none"
+  unclickable: "Message when user clicks an unclickable button. Variables: none"
+  not_implemented: "Message when user tries to access a feature that is not yet implemented. Variables: none"
 
 admin:
   unauthorized:

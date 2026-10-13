@@ -8,6 +8,10 @@ from src.db.migrations.m001_initial_schema import (
     BASELINE_TABLES,
     InitialSchemaMigration,
 )
+from src.db.migrations.m002_optimized_schema import OptimizedSchemaMigration
+from src.db.migrations.m003_add_timezone_and_notification_types import (
+    AddTimezoneAndNotificationTypesMigration,
+)
 
 
 class ConcreteMigration(Migration):
@@ -117,7 +121,12 @@ def test_migrations_apply_to_an_isolated_database(tmp_path) -> None:
     connection = sqlite3.connect(database_path)
     assert connection.execute(
         "SELECT version, name FROM schema_migrations"
-    ).fetchall() == [(1, "initial_schema"), (2, "optimized_schema")]
+    ).fetchall() == [
+        (1, "initial_schema"),
+        (2, "optimized_schema"),
+        (3, "add_timezone_and_notification_types"),
+        (4, "expand_notification_queue"),
+    ]
     assert Migration.get_columns(connection, "groups") == {
         "id", "study_form", "enrollment_year", "group_name"
     }
@@ -137,7 +146,7 @@ def test_migrations_are_idempotent_on_an_isolated_database(tmp_path) -> None:
     connection = sqlite3.connect(database_path)
     assert connection.execute(
         "SELECT COUNT(*) FROM schema_migrations"
-    ).fetchone()[0] == 2
+    ).fetchone()[0] == 4
 
 
 def test_downgrade_to_initial_schema_preserves_compatible_data(tmp_path) -> None:
@@ -230,6 +239,43 @@ def test_migration_runner_rejects_unknown_migration_history(tmp_path) -> None:
     assert "history is incompatible" in str(migration.value)
 
 
+def test_notification_type_migration_drops_unknown_preferences_and_enforces_timezone(
+    tmp_path,
+) -> None:
+    database_path = tmp_path / "notification_types.db"
+    connection = sqlite3.connect(database_path)
+    InitialSchemaMigration().upgrade(connection)
+    OptimizedSchemaMigration().upgrade(connection)
+    connection.execute("INSERT INTO users(chat_id) VALUES (42)")
+    connection.execute(
+        """
+        INSERT INTO notification_preferences(type, recipient_id)
+        VALUES ('schedule_change', 42), ('obsolete', 42)
+        """
+    )
+    AddTimezoneAndNotificationTypesMigration().upgrade(connection)
+
+    assert connection.execute(
+        "SELECT name FROM notification_types ORDER BY id"
+    ).fetchall() == [
+        ("schedule_change",),
+        ("day_summary",),
+        ("reminder",),
+    ]
+    assert connection.execute(
+        """
+        SELECT t.name
+        FROM notification_preferences p
+        JOIN notification_types t ON t.id = p.notification_type_id
+        """
+    ).fetchall() == [("schedule_change",)]
+    assert connection.execute(
+        "SELECT timezone FROM users WHERE chat_id = 42"
+    ).fetchone() == ("Europe/Vilnius",)
+    with pytest.raises(sqlite3.IntegrityError):
+        connection.execute("UPDATE users SET timezone = 'not-a-zone' WHERE chat_id = 42")
+
+
 def test_initial_migration_preserves_legacy_init_db_data(tmp_path) -> None:
     # Arrange
     database_path = tmp_path / "legacy.db"
@@ -284,13 +330,14 @@ def test_initial_migration_preserves_legacy_init_db_data(tmp_path) -> None:
     ).fetchone() == (None, None, 0, "ru")
     notification = connection.execute(
         """
-        SELECT p.type, q.status_id, q.scheduled_for
+        SELECT t.name, q.status_id, q.scheduled_for
         FROM notifications_queue q
         JOIN notification_preferences p ON p.id = q.notification_id
+        JOIN notification_types t ON t.id = p.notification_type_id
         """
     ).fetchone()
     assert notification[:2] == ("schedule_change", 1)
-    assert notification[2] is not None
+    assert isinstance(notification[2], int)
     assert not connection.execute(
         "PRAGMA foreign_key_list(pending_notifications)"
     ).fetchall()
