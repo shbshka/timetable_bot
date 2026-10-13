@@ -6,7 +6,7 @@
 # ====================================================================================
 
 start:
-  welcome_back: "Welcome message for returning users. Variables: {first_name}, {group_name}"
+  welcome_back: "Welcome message for returning users. Variables: {first_name}, {group_name}, {timezone}"
   welcome_new: "Welcome message for new users prompting group selection. Variables: {first_name}"
 
 help: "Help text and general support information. Variables: none"
@@ -32,6 +32,9 @@ language:
 timezone:
   prompt: "Prompt for selecting timezone. Variables: none"
   current: "Confirmation message showing current timezone. Variables: {timezone}"
+  updated: "Confirmation message after changing timezone. Variables: {timezone}"
+  labels: "List labels for timezone selection buttons under this section. Variables: none"
+  add: "Text for 'Add your timezone' button. Variables: none"
 
 group:
   choose_form:
@@ -90,6 +93,7 @@ error:
   schedule_fetch_failed: "Error message when fetching schedule fails. Variables: none"
   session_expired: "Message when user interactive session expires. Variables: none"
   unclickable: "Message when user clicks an unclickable button. Variables: none"
+  not_implemented: "Message when user tries to access a feature that is not yet implemented. Variables: none"
 
 admin:
   unauthorized:

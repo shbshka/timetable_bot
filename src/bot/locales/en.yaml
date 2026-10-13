@@ -3,6 +3,7 @@ start:
     👋 Welcome back, <b>{first_name}</b>!
 
     📌 <b>Current group:</b> <code>{group_name}</code>
+    🕒 <b>Current time:</b> <code>{timezone}</code>
 
     Quick commands:
     • /today — Today's schedule
@@ -29,6 +30,8 @@ help: |
   • /week — Schedule for the week
   • /group — Change group
   • /language — Change language
+  • /timezone — Change timezone
+  • /notifications — Change notification settings
   • /help — Help & settings
 
 btns:
@@ -51,8 +54,29 @@ language:
   changed: "Interface language: {language}."
 
 timezone:
-  prompt: "Select timezone:"
+  prompt: |
+    🕒 <b>Timezone</b>
+
+    Select the timezone in which the schedule will be displayed.
   current: "🕒 Timezone: {timezone}."
+  updated: |
+    🕒 Timezone successfully changed to {timezone}.
+
+    Select the timezone in which the schedule will be displayed.
+  labels:
+    london: "London (GMT/BST)"
+    berlin: "Berlin (CET/CEST)"
+    warsaw: "Warsaw / Krakow (CET/CEST)"
+    vilnius: "Vilnius (EET/EEST)"
+    kyiv: "Kyiv (EET/EEST)"
+    bucharest: "Bucharest (EET/EEST)"
+    moscow: "Moscow / St. Petersburg (MSK)"
+    yerevan: "Yerevan (AMT)"
+    tbilisi: "Tbilisi (GET)"
+    yekaterinburg: "Yekaterinburg (YEKT)"
+    almaty: "Almaty"
+    tashkent: "Tashkent"
+  add: ""
 
 group:
   choose_form:
@@ -170,6 +194,7 @@ error:
   session_expired: |
     ⚠️ Session expired. Send the last command again and restart.
   unclickable: "BRUH 🗿➡️"
+  not_implemented: "⚠️ Feature under development. Please contact @shoobec on the issue (if any)."
 
 admin:
   unauthorized:

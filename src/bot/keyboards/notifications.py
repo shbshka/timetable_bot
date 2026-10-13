@@ -2,6 +2,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from src.db.db_repository.notifications_repository import NotificationPreferencesRepository
 from src.utils.messages import get_user_msg
+from src.bot.keyboards.loading import loading_button
 
 
 def notification_preferences_keyboard(chat_id: int) -> InlineKeyboardMarkup:
@@ -23,11 +24,6 @@ def notification_preferences_keyboard(chat_id: int) -> InlineKeyboardMarkup:
             [InlineKeyboardButton(get_user_msg(chat_id, "btns.btn_home"), callback_data="cmd_home")],
         ]
     )
-
-
-def loading_button(chat_id: int) -> InlineKeyboardButton:
-    """Creates an inline loading button."""
-    return InlineKeyboardButton(get_user_msg(chat_id, "btns.btn_loading"), callback_data="ignore_loading")
 
 
 def notification_preferences_loading_keyboard(

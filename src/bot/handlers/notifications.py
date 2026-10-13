@@ -1,3 +1,5 @@
+import asyncio
+
 from telegram import Update
 from telegram.error import BadRequest
 from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
@@ -68,8 +70,8 @@ async def toggle_notification_preference(update: Update, context: ContextTypes.D
             raise
 
     NotificationPreferencesRepository.toggle_notification_preference(chat_id, pref_type)
-    # plan_notifications_job(context)
-    # await dispatch_notifications_job(context)
+    await plan_notifications_job(context)
+    await dispatch_notifications_job(context)
 
     reply_markup = notification_preferences_keyboard(chat_id)
     try:

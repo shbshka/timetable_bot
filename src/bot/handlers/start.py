@@ -35,7 +35,8 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             chat_id,
             "start.welcome_back", 
             first_name=first_name, 
-            group_name=user_context["group_name"]
+            group_name=user_context["group_name"],
+            timezone=user_context["timezone"],
         )
         #TODO: refactor this to use a single function for generating the keyboard
         reply_markup = InlineKeyboardMarkup(home_keyboard(chat_id))
