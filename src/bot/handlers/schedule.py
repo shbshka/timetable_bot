@@ -7,7 +7,7 @@ from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes, Mes
 from src.bot.keyboards.schedule import daily_schedule_keyboard, weekly_schedule_keyboard
 from src.db.repository import get_user_locale, get_user_schedule_context
 from src.parser.schedule_parser import get_cached_schedule
-from src.services.admin_notifier import forward_message_to_admin, notify_admin_of_error
+from src.services.admin_notifier import forward_link_to_admin, notify_admin_of_error
 from src.utils.formatter import format_daily_schedule, format_weekly_schedule
 from src.utils.logger import get_logger
 from src.utils.time import institution_now
@@ -49,7 +49,7 @@ async def handle_incoming_link_submission(update: Update, context: ContextTypes.
         user_name = update.effective_user.first_name or "Student"
         username = update.effective_user.username or "N/A"
 
-        success = await forward_message_to_admin(
+        success = await forward_link_to_admin(
             bot=context.bot,
             user_chat_id=chat_id,
             user_name=user_name,

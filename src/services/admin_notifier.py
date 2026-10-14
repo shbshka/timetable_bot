@@ -12,6 +12,39 @@ logger = get_logger("admin")
 
 
 async def forward_message_to_admin(
+        bot: Bot, 
+        user_chat_id: int, 
+        user_username: str,
+        user_group_name: str,
+        message_text: str
+        ) -> bool:
+    """Forwards message to ADMIN_ID"""
+    if not ADMIN_ID:
+        logger.error("ADMIN_ID is not configured!")
+        return False
+
+    reply_text = get_user_msg(
+        ADMIN_ID,
+        "admin.forwards.message.new_message",
+        user_chat_id=user_chat_id,
+        user_username=user_username,
+        group_name=user_group_name,
+        message_text=message_text
+    )
+
+    try:
+        await bot.send_message(
+            chat_id=ADMIN_ID,
+            text=reply_text,
+            parse_mode="HTML"
+        )
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send message to admin: {e}", exc_info=True)
+        return False
+
+
+async def forward_link_to_admin(
     bot: Bot,
     user_chat_id: int,
     user_name: str,
@@ -38,6 +71,7 @@ async def forward_message_to_admin(
         link_text=link_text
     )
 
+    # TODO: extract to keyboards
     keyboard = []
     if sheet_id and group_info:
         sub_id = create_pending_submission(

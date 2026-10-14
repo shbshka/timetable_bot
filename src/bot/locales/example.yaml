@@ -9,7 +9,13 @@ start:
   welcome_back: "Welcome message for returning users. Variables: {first_name}, {group_name}, {timezone}"
   welcome_new: "Welcome message for new users prompting group selection. Variables: {first_name}"
 
-help: "Help text and general support information. Variables: none"
+help:
+  show: "Help text and general support information. Variables: none"
+  get: "✉️ Complain to me if something went wrong"
+  send_message:
+    prompt: "Prompt for user to write a message to be forwarded to admin. Variables: none"
+    success: "Confirmation message after successfully sending a message to admin. Variables: none"
+    failure: "Error message when failing to send a message to admin. Variables: none"
 
 btns:
   btn_today: "Text for 'Today' schedule button. Variables: none"
@@ -21,6 +27,7 @@ btns:
   btn_language: "Text for 'Language' button. Variables: none"
   btn_timezone: "Text for 'Timezone' button. Variables: none"
   btn_home: "Text for 'Main Menu' navigation button. Variables: none"
+  btn_back: "Text for 'Back' navigation button. Variables: none"
 
   btn_enabled: "Text for 'Enabled' status button. Variables: none"
   btn_disabled: "Text for 'Disabled' status button. Variables: none"
@@ -134,5 +141,7 @@ admin:
       approve_button: "Text for approving link button. Variables: {group_name}"
       reject_button: "Text for rejecting link button. Variables: {group_name}"
       approve_sheet: "Confirmation message after link approval. Variables: {group_name}, {sheet_id}"
+    message:
+      new_message: "Notification to admin about user-submitted message. Variables: {user_username}, {user_chat_id}, {group_name}, {message_text}"
     error:
       error_occurred: "Notification to admin when system error occurs. Variables: {error_message}"
