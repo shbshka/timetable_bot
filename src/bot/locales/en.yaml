@@ -8,9 +8,8 @@ start:
     Quick commands:
     • /today — Today's schedule
     • /week — Schedule for the week
-    • /group — Change group
     • /language — Change language
-    • /help — Help & settings
+    • /help — Help & commands
 
   welcome_new: |
     👋 Hi, <b>{first_name}</b>!
@@ -21,18 +20,26 @@ start:
 
     Select your study group:
 
-help: |
-  No one here can help you except yourself 🗿
-  (you can ping me at @shoobec)
-  Quick commands:
-  • /home — Main menu
-  • /today — Today's schedule
-  • /week — Schedule for the week
-  • /group — Change group
-  • /language — Change language
-  • /timezone — Change timezone
-  • /notifications — Change notification settings
-  • /help — Help & settings
+help: 
+  show: |
+    No one here can help you except yourself 🗿
+    (you can ping me at @shoobec or use the button below)
+    Quick commands:
+    • /home — Main menu
+    • /today — Today's schedule
+    • /week — Schedule for the week
+    • /group — Change group
+    • /language — Change language
+    • /timezone — Change timezone
+    • /notifications — Change notification settings
+    • /help — Help & settings
+  get: "✉️ Complain to me if something went wrong"
+  send_message:
+    prompt: "Write a message, it will be forwarded to the admin"
+    success: |
+      ✅ Message successfully sent to the admin.
+    failure: |
+      ⚠️ Failed to send message to the admin. Please text @shoobec manually.
 
 btns:
   btn_today: "📅 Today"
@@ -41,10 +48,11 @@ btns:
   btn_current_week: "📅 Current week"
   btn_change_group: "⚙️ Change group"
   btn_select_group: "🎓 Select group"
-  btn_notification_preferences: "🔔 Notification preferences"
+  btn_notification_preferences: "🔔 Notifications"
   btn_language: "🌐 Язык / Language"
   btn_timezone: "🕒 Timezone"
   btn_home: "🏠 Main menu"
+  btn_back: "⬅️ Back"
 
   btn_enabled: "✅ on"
   btn_disabled: "🟥 off"
@@ -261,6 +269,12 @@ admin:
 
         • Group: {group_name}
         • Sheet ID: {sheet_id}
+    message:
+      new_message: |
+        📌 <b>New message from user</b>
+
+        • Sender: @{user_username} (ID: {user_chat_id}) | {group_name}
+        • Message: {message_text}
     error:
       error_occurred: |
         ⚠️⚠️⚠️ An error occurred: {error_message}

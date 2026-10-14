@@ -7,9 +7,9 @@ def home_keyboard(chat_id: int) -> list[list[InlineKeyboardButton]]:
         [
             InlineKeyboardButton(get_user_msg(chat_id, "btns.btn_today"), callback_data="cmd_today"),
             InlineKeyboardButton(get_user_msg(chat_id, "btns.btn_tomorrow"), callback_data="cmd_tomorrow"),
+            InlineKeyboardButton(get_user_msg(chat_id, "btns.btn_week"), callback_data="cmd_week"),
         ],
         [   
-            InlineKeyboardButton(get_user_msg(chat_id, "btns.btn_week"), callback_data="cmd_week"),
             InlineKeyboardButton(
                 get_user_msg(chat_id, "btns.btn_change_group"),
                 callback_data="cmd_change_group",
