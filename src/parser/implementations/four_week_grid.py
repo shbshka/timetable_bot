@@ -92,7 +92,7 @@ def _duration_hours(value: str) -> float | None:
         return None
     start = int(matches[0][0]) * 60 + int(matches[0][1])
     end = int(matches[1][0]) * 60 + int(matches[1][1])
-    duration = (end - start) / 60
+    duration = (end - start) / 45
     return duration if duration > 0 else None
 
 

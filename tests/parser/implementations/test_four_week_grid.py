@@ -26,4 +26,4 @@ def test_four_week_layout_propagates_dates_and_reads_repeated_blocks() -> None:
     assert lectures[1].date.isoformat() == "2026-10-05"
     assert lectures[0].course_year == 2
     assert lectures[0].level == "HR"
-    assert lectures[0].hours == 1.5
+    assert lectures[0].hours == 2.0
