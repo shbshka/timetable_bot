@@ -3,6 +3,8 @@ from telegram.ext import (
     Application,
     ApplicationBuilder,
     TypeHandler,
+    MessageHandler,
+    filters,
 )
 
 from config import (
@@ -31,6 +33,7 @@ from src.bot.jobs.notifications.dispatcher import dispatch_notifications_job, pl
 from src.db.database import populate_db
 from src.db.migrate import run_migrations, run_downgrades
 from src.utils.logger import get_logger
+from src.bot.handlers.router import handle_text
 
 logger = get_logger("app")
 
@@ -57,6 +60,10 @@ def create_bot_app() -> Application:
 
     logger.info("Registering command handlers and callback query listeners...")
     app.add_handler(TypeHandler(Update, block_banned_users), group=-1)
+
+    app.add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text)
+    )
 
     register_help_handler(app)
     register_language_handler(app)

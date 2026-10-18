@@ -153,6 +153,19 @@ async def render_weekly_schedule(
     user_context, error_msg = await _get_user_schedule_context(chat_id)
 
     if error_msg:
+        group_context = get_user_schedule_context(chat_id)
+
+        if group_context and not group_context.get("sheet_id"):
+            group_name = group_context.get("group_name", "your group")
+            context.user_data["awaiting_sheet_link"] = group_name
+            prompt_text = get_user_msg(chat_id, "schedule.errors.not_found", group_name=group_name)
+
+            if update.callback_query:
+                    await update.callback_query.edit_message_text(prompt_text, parse_mode="HTML")
+            elif update.effective_message:
+                    await update.effective_message.reply_text(prompt_text, parse_mode="HTML")
+            return
+
         if update.callback_query:
             await update.callback_query.edit_message_text(error_msg, parse_mode="HTML")
         elif update.effective_message:
@@ -252,4 +265,3 @@ def register_schedule_handlers(app) -> None:
     app.add_handler(CommandHandler("week", week_command))
     
     app.add_handler(CallbackQueryHandler(handle_schedule_callbacks, pattern="^cmd_(today|tomorrow|week|day:)"))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_incoming_link_submission))
