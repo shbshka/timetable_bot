@@ -66,4 +66,3 @@ def register_help_handler(app) -> None:
     """Registers the /help command handler into the Application."""
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CallbackQueryHandler(handle_get_help_button, pattern="^cmd_get_help$"))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_incoming_message_submission))
