@@ -114,6 +114,7 @@ async def render_daily_schedule(update: Update, context: ContextTypes.DEFAULT_TY
             group_name=group_name,
             date=target_date,
             schedule=schedule,
+            timezone=user_context["timezone"],
             locale=get_user_locale(chat_id),
         )
 
@@ -185,6 +186,7 @@ async def render_weekly_schedule(
         response_text = format_weekly_schedule(
             group_name=group_name,
             weekly_schedule=weekly_schedule,
+            timezone=user_context["timezone"],
             locale=get_user_locale(chat_id),
         )
 

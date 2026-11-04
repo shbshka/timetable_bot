@@ -10,6 +10,7 @@ import pytest
 from src.bot.jobs.notifications.dispatcher import NotificationDispatcher
 from src.bot.jobs.notifications.planner import Planner
 from src.db import repository
+from src.parser.models import Lecture
 from src.utils.messages import get_msg
 
 
@@ -178,6 +179,56 @@ def test_dispatcher_renders_reminder_with_timezone_and_tbd_room() -> None:
     assert "Math" in rendered
     assert "12:00" in rendered
     assert get_msg("schedule.time_tbd", locale="en") in rendered
+
+
+@pytest.mark.parametrize("lecture_time", ["08:30", "8:30", "08:30-10:00"])
+def test_planner_reminder_uses_lecture_start_time(lecture_time: str) -> None:
+    planner = Planner(institution_timezone=ZoneInfo("Europe/Vilnius"))
+    preference = {"id": 1, "group_id": 7, "reminder_minutes_before": 30}
+    lecture = {
+        "id": 1, "source_id": "s", "lecture_date": "2026-12-01", "lecture_time": lecture_time,
+        "subject": "Math", "room": None, "teacher": None,
+    }
+
+    occurrences = planner._reminder_occurrences(preference, [lecture], datetime(2026, 11, 4, tzinfo=UTC))
+
+    start_at = int(datetime(2026, 12, 1, 6, 30, tzinfo=UTC).timestamp())
+    assert [occurrence["payload"]["lecture_start_at"] for occurrence in occurrences] == [start_at]
+    assert occurrences[0]["scheduled_for"] == start_at - 30 * 60
+
+
+def test_planner_skips_reminder_for_lecture_without_readable_time() -> None:
+    planner = Planner(institution_timezone=ZoneInfo("Europe/Vilnius"))
+    preference = {"id": 1, "group_id": 7, "reminder_minutes_before": 30}
+    lecture = {
+        "id": 1, "source_id": "s", "lecture_date": "2026-12-01", "lecture_time": "see teacher note",
+        "subject": "Math", "room": None, "teacher": None,
+    }
+
+    assert planner._reminder_occurrences(preference, [lecture], datetime(2026, 11, 4, tzinfo=UTC)) == []
+
+
+def test_dispatcher_renders_day_summary_in_recipient_timezone(monkeypatch) -> None:
+    monkeypatch.setattr("src.utils.time.INSTITUTION_TIMEZONE", ZoneInfo("Europe/Vilnius"))
+    monkeypatch.setattr(
+        NotificationDispatcher,
+        "_get_group_lectures_by_date",
+        staticmethod(lambda _group_id, target_date: [
+            Lecture(date=date.fromisoformat(target_date), time="09:00", subject="Math"),
+        ]),
+    )
+    notification = {
+        "notification_type": "day_summary",
+        "locale": "en",
+        "group_name": "HR",
+        "group_id": 7,
+        "target_date": "2026-10-12",
+        "timezone": "Asia/Almaty",
+    }
+
+    rendered = NotificationDispatcher()._render(notification)
+
+    assert "<code>11:00-12:30</code> Almaty |" in rendered
 
 
 def test_dispatcher_rejects_unknown_notification_type() -> None:
