@@ -10,7 +10,7 @@ from src.db.db_repository.notifications_queue_repository import NotificationQueu
 from src.db.db_repository.notifications_repository import NotificationPreferencesRepository
 
 from src.utils.logger import get_logger
-from src.utils.time import resolve_local_time, utc_now
+from src.utils.time import lecture_start_time, resolve_local_time, utc_now
 
 logger = get_logger("jobs")
 
@@ -149,9 +149,14 @@ class Planner:
             if not lecture["lecture_time"]:
                 continue
 
+            start_time = lecture_start_time(lecture["lecture_time"])
+            if start_time is None:
+                logger.debug(f"Lecture {lecture['id']} has no readable start time. Skipping reminder.")
+                continue
+
             naive = datetime.combine(
                 datetime.fromisoformat(lecture["lecture_date"]).date(),
-                time.fromisoformat(lecture["lecture_time"]),
+                start_time,
             )
             local = naive.replace(tzinfo=self.institution_timezone)
             alternative = local.replace(fold=1)

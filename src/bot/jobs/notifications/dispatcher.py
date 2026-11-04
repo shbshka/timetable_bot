@@ -136,6 +136,7 @@ class NotificationDispatcher:
                 group_name,
                 datetime.fromisoformat(target_date),
                 schedule,
+                timezone=notification["timezone"],
                 locale=locale,
             )
 

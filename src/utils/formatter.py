@@ -3,6 +3,7 @@ from html import escape
 
 from src.parser.models import DaySchedule, Lecture
 from src.utils.messages import get_msg
+from src.utils.time import convert_lecture_time
 
 _WEEKDAY_KEYS = (
 	"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"
@@ -20,8 +21,19 @@ def _format_schedule_date(value: datetime, locale: str, include_year: bool) -> s
 	return f"{date_text} {value.year}" if include_year else date_text
 
 
-def _format_lecture(lecture: Lecture, locale: str) -> str:
-	time = f"{escape(lecture.time or get_msg("schedule.time_tbd", locale=locale))}"
+def _timezone_label(timezone: str, locale: str) -> str:
+	"""Returns the localized label of a timezone, or its IANA name if it has none."""
+	city = timezone.rsplit("/", 1)[-1].lower()
+	key = f"timezone.labels.{city}"
+	label = get_msg(key, locale=locale)
+	return escape(timezone) if label == f"[{key}]" else label
+
+
+def _format_lecture(lecture: Lecture, locale: str, timezone: str) -> str:
+	if lecture.time:
+		time = escape(convert_lecture_time(lecture.time, lecture.date, timezone))
+	else:
+		time = escape(get_msg("schedule.time_tbd", locale=locale))
 	room_info = f" (Rm {escape(lecture.room)})" if lecture.room else ""
 	teacher_info = f" - <i>{escape(lecture.teacher)}</i>" if lecture.teacher else ""
 	hr_msg = get_msg("schedule.hour", locale=locale)
@@ -33,10 +45,16 @@ def _format_lecture(lecture: Lecture, locale: str) -> str:
 	if lecture.delivery_mode:
 		details.append(escape(lecture.delivery_mode))
 	detail_text = f" ({', '.join(details)})" if details else ""
-	return f"- <code>{time}</code> {get_msg("timezone.labels.vilnius", locale=locale)} | <b>{escape(lecture.subject)}</b>{room_info}{teacher_info}{detail_text}\n"
+	return f"- <code>{time}</code> {_timezone_label(timezone, locale)} | <b>{escape(lecture.subject)}</b>{room_info}{teacher_info}{detail_text}\n"
 
 
-def format_daily_schedule(group_name: str, date: datetime, schedule: list[DaySchedule], locale: str = "ru") -> str:
+def format_daily_schedule(
+	group_name: str,
+	date: datetime,
+	schedule: list[DaySchedule],
+	timezone: str,
+	locale: str = "ru",
+) -> str:
 	date_str = _format_schedule_date(date, locale, include_year=True)
 	lectures = schedule[0].lectures if schedule else []
 
@@ -45,12 +63,17 @@ def format_daily_schedule(group_name: str, date: datetime, schedule: list[DaySch
 
 	text = get_msg("schedule.daily", locale=locale, group_name=group_name, date_str=date_str)
 	for lecture in lectures:
-		text += _format_lecture(lecture, locale)
+		text += _format_lecture(lecture, locale, timezone)
 
 	return text
 
 
-def format_weekly_schedule(group_name: str, weekly_schedule: list[DaySchedule], locale: str = "ru") -> str:
+def format_weekly_schedule(
+	group_name: str,
+	weekly_schedule: list[DaySchedule],
+	timezone: str,
+	locale: str = "ru",
+) -> str:
 	week_lines = []
 	for day_schedule in weekly_schedule:
 		day_name = _format_schedule_date(day_schedule.date, locale, include_year=False)
@@ -59,7 +82,7 @@ def format_weekly_schedule(group_name: str, weekly_schedule: list[DaySchedule], 
 			week_lines.append(get_msg("schedule.empty", locale=locale))
 		else:
 			week_lines.extend(
-				f"  {_format_lecture(lecture, locale).rstrip()}"
+				f"  {_format_lecture(lecture, locale, timezone).rstrip()}"
 				for lecture in day_schedule.lectures
 			)
 		week_lines.append("")
