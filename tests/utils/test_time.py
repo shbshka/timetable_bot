@@ -60,6 +60,35 @@ def test_resolve_non_dst_timezone_preserves_wall_time() -> None:
     assert resolved.utcoffset() == timedelta(hours=4)
 
 
+def test_add_lecture_end_adds_standard_duration_to_lone_start() -> None:
+    assert time.add_lecture_end("08:30") == "08:30-10:00"
+    assert time.add_lecture_end(" 8:30 ") == "8:30-10:00"
+
+
+def test_add_lecture_end_wraps_past_midnight() -> None:
+    assert time.add_lecture_end("23:30") == "23:30-01:00"
+
+
+def test_add_lecture_end_leaves_ranges_and_free_text() -> None:
+    assert time.add_lecture_end("08:30-11:00") == "08:30-11:00"
+    assert time.add_lecture_end("from 08:30") == "from 08:30"
+
+
+def test_add_lecture_end_uses_lecture_duration_in_academic_hours() -> None:
+    assert time.add_lecture_end("08:30", 2) == "08:30-10:00"
+    assert time.add_lecture_end("08:30", 3) == "08:30-10:45"
+    assert time.add_lecture_end("08:30", 4.0) == "08:30-11:30"
+
+
+def test_add_lecture_end_falls_back_to_standard_duration_without_hours() -> None:
+    assert time.add_lecture_end("08:30", None) == "08:30-10:00"
+    assert time.add_lecture_end("08:30", 0) == "08:30-10:00"
+
+
+def test_add_lecture_end_keeps_range_from_sheet_whatever_the_duration() -> None:
+    assert time.add_lecture_end("08:30-11:00", 2) == "08:30-11:00"
+
+
 def _vilnius_institution(monkeypatch) -> None:
     monkeypatch.setattr(time, "INSTITUTION_TIMEZONE", ZoneInfo("Europe/Vilnius"))
 

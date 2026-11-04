@@ -1,9 +1,11 @@
 import re
-from datetime import UTC, date, datetime, time
+from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from config import INSTITUTION_TIMEZONE
 
+ACADEMIC_HOUR = timedelta(minutes=45)
+LECTURE_DURATION = timedelta(minutes=90)
 _LECTURE_TIME_RE = re.compile(r"(?<!\d)([01]?\d|2[0-3]):([0-5]\d)(?!\d)")
 
 
@@ -72,6 +74,27 @@ def lecture_start_time(time_text: str) -> time | None:
     """
     match = _LECTURE_TIME_RE.search(time_text)
     return time(int(match[1]), int(match[2])) if match else None
+
+
+def add_lecture_end(time_text: str, academic_hours: float | None = None) -> str:
+    """
+    Turn a lone start time into a range using the lecture's duration, e.g. '08:30' with
+    2 academic hours becomes '08:30-10:00'. Lectures without a duration are assumed to
+    last LECTURE_DURATION.
+
+    param time_text: the lecture time as stored.
+
+    param academic_hours: the lecture's duration in academic hours, if known.
+
+    returns: the range, or the text unchanged if it is anything but a single time.
+    """
+    match = _LECTURE_TIME_RE.fullmatch(time_text.strip())
+    if not match:
+        return time_text
+
+    duration = academic_hours * ACADEMIC_HOUR if academic_hours else LECTURE_DURATION
+    start = datetime.combine(date.min, time(int(match[1]), int(match[2])))
+    return f"{match[0]}-{(start + duration).strftime('%H:%M')}"
 
 
 def convert_lecture_time(time_text: str, lecture_date: date, timezone_name: str) -> str:

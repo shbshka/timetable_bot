@@ -3,7 +3,7 @@ from html import escape
 
 from src.parser.models import DaySchedule, Lecture
 from src.utils.messages import get_msg
-from src.utils.time import convert_lecture_time
+from src.utils.time import add_lecture_end, convert_lecture_time
 
 _WEEKDAY_KEYS = (
 	"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"
@@ -31,7 +31,7 @@ def _timezone_label(timezone: str, locale: str) -> str:
 
 def _format_lecture(lecture: Lecture, locale: str, timezone: str) -> str:
 	if lecture.time:
-		time = escape(convert_lecture_time(lecture.time, lecture.date, timezone))
+		time = escape(convert_lecture_time(add_lecture_end(lecture.time, lecture.hours), lecture.date, timezone))
 	else:
 		time = escape(get_msg("schedule.time_tbd", locale=locale))
 	room_info = f" (Rm {escape(lecture.room)})" if lecture.room else ""

@@ -228,7 +228,7 @@ def test_dispatcher_renders_day_summary_in_recipient_timezone(monkeypatch) -> No
 
     rendered = NotificationDispatcher()._render(notification)
 
-    assert "<code>11:00</code> Almaty |" in rendered
+    assert "<code>11:00-12:30</code> Almaty |" in rendered
 
 
 def test_dispatcher_rejects_unknown_notification_type() -> None:
