@@ -15,6 +15,9 @@ async def home_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if not update.effective_chat or not update.effective_user:
         return
 
+    if update.callback_query:
+        await update.callback_query.answer()
+
     chat_id = update.effective_chat.id
     first_name = update.effective_user.first_name
     user_context = get_user_schedule_context(chat_id)
@@ -52,9 +55,6 @@ async def handle_home_button_callbacks(update: Update, context: ContextTypes.DEF
     elif data == "cmd_tomorrow":
         from src.bot.handlers.schedule import tomorrow_command
         await tomorrow_command(update, context)
-    elif data == "cmd_notification_preferences":
-        from src.bot.handlers.notifications import notification_preferences_command
-        await notification_preferences_command(update, context)
 
 
 def register_home_handler(app) -> None:
@@ -63,5 +63,5 @@ def register_home_handler(app) -> None:
     app.add_handler(CallbackQueryHandler(home_command, pattern="^cmd_home$"))
     app.add_handler(CallbackQueryHandler(
          handle_home_button_callbacks, 
-         pattern="^(cmd_change_group|cmd_today|cmd_tomorrow|cmd_notification_preferences)$"
+         pattern="^(cmd_change_group|cmd_today|cmd_tomorrow)$"
          ))

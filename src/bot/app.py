@@ -20,6 +20,7 @@ from src.bot.handlers.group import register_group_handlers
 from src.bot.handlers.help import register_help_handler
 from src.bot.handlers.home import register_home_handler
 from src.bot.handlers.language import register_language_handler
+from src.bot.handlers.loading import register_loading_handler
 from src.bot.handlers.notifications import register_notification_preferences_handler
 from src.bot.handlers.schedule import register_schedule_handlers
 from src.bot.handlers.start import register_start_handler
@@ -67,6 +68,7 @@ def create_bot_app() -> Application:
 
     register_help_handler(app)
     register_language_handler(app)
+    register_loading_handler(app)
     register_notification_preferences_handler(app)
     register_home_handler(app)
     register_start_handler(app)

@@ -35,14 +35,14 @@ def timezone_loading_keyboard(
     chat_id: int,
     timezone: str,
 ) -> InlineKeyboardMarkup:
-    """Replace the selected timezone row with a non-interactive loading button."""
+    """Replace the selected timezone button with a non-interactive loading button."""
     target_prefix = f"tz:{timezone}"
     rows = []
     replaced = False
 
     for row in current_markup.inline_keyboard:
+        buttons = []
         for button in row:
-            buttons = []
             if button.callback_data and button.callback_data.startswith(target_prefix):
                 buttons.append(loading_button(chat_id))
                 replaced = True

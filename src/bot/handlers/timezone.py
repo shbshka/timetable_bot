@@ -17,6 +17,9 @@ async def timezone_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     if not update.effective_chat or not update.effective_user:
         return
 
+    if update.callback_query:
+        await update.callback_query.answer()
+
     chat_id = update.effective_chat.id
     user_context = get_user_schedule_context(chat_id)
 
@@ -40,6 +43,8 @@ async def handle_timezone_button_callbacks(update: Update, context: ContextTypes
     if not query or not chat_id:
         return
 
+    await query.answer()
+
     timezone = query.data.split(":")[1]
 
     if not timezone:
@@ -59,8 +64,12 @@ async def handle_timezone_button_callbacks(update: Update, context: ContextTypes
         if "Message is not modified" not in str(error):
             raise
 
-    set_user_timezone(chat_id, timezone)
-    Planner().replan_notifications_for_user(chat_id)
+    try:
+        set_user_timezone(chat_id, timezone)
+        Planner().replan_notifications_for_user(chat_id)
+    except Exception:
+        await query.edit_message_reply_markup(timezone_keyboard(chat_id))
+        raise
 
     reply_markup = timezone_keyboard(chat_id, get_user_schedule_context(chat_id)["locale"])
     reply_text = get_user_msg(chat_id, "timezone.updated", timezone=timezone)
