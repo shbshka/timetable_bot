@@ -15,3 +15,5 @@ def help_back(chat_id: int) -> InlineKeyboardMarkup:
     keyboard = [
         [InlineKeyboardButton(get_user_msg(chat_id, "btns.btn_back"), callback_data="cmd_help")],
     ]
+
+    return InlineKeyboardMarkup(keyboard)
