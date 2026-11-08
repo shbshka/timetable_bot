@@ -21,6 +21,9 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 async def handle_get_help_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handles the 'Get Help' button click from the help menu."""
     logger.debug(f"Handling 'Get Help' button callback for user: {update.effective_user.id}")
+    if update.callback_query:
+        await update.callback_query.answer()
+
     chat_id = update.effective_chat.id
 
     context.user_data["awaiting_message"] = True
@@ -31,6 +34,21 @@ async def handle_get_help_button(update: Update, context: ContextTypes.DEFAULT_T
         await update.callback_query.edit_message_text(prompt_text, reply_markup=reply_markup, parse_mode="HTML")
     elif update.effective_message:
         await update.effective_message.reply_text(prompt_text, reply_markup=reply_markup, parse_mode="HTML")
+
+
+async def handle_help_back_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Cancels a pending help message and returns to the help menu."""
+    query = update.callback_query
+    await query.answer()
+
+    context.user_data.pop("awaiting_message", None)
+
+    chat_id = update.effective_chat.id
+    await query.edit_message_text(
+        get_user_msg(chat_id, "help.show"),
+        reply_markup=help_keyboard(chat_id),
+        parse_mode="HTML",
+    )
 
 
 async def handle_incoming_message_submission(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -66,3 +84,4 @@ def register_help_handler(app) -> None:
     """Registers the /help command handler into the Application."""
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CallbackQueryHandler(handle_get_help_button, pattern="^cmd_get_help$"))
+    app.add_handler(CallbackQueryHandler(handle_help_back_button, pattern="^cmd_help$"))

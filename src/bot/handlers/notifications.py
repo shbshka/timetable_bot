@@ -22,6 +22,9 @@ async def notification_preferences_command(update: Update, context: ContextTypes
     if not update.effective_chat or not update.effective_user:
         return
 
+    if update.callback_query:
+        await update.callback_query.answer()
+
     chat_id = update.effective_chat.id
 
     user_context = get_user_group_and_tz(chat_id)
