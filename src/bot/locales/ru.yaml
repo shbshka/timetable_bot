@@ -181,6 +181,7 @@ notifications:
   reminder_message: |
     🔔 <b>{subject}</b> в <code>{time}</code>
     Аудитория: <code>{room}</code>
+  room_tbd: "уточняется"
   prompt: |
     🔔 <b>Настройки уведомлений</b>
     

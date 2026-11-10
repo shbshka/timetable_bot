@@ -179,6 +179,7 @@ notifications:
   reminder_message: |
     🔔 <b>{subject}</b> at <code>{time}</code>
     Room: <code>{room}</code>
+  room_tbd: "TBD"
   prompt: |
     🔔 <b>Notification preferences</b>
 

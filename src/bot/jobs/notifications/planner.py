@@ -59,7 +59,7 @@ class Planner:
         rows = conn.execute(
             """
             SELECT id, source_id, lecture_date, lecture_time,
-                   subject, room, teacher
+                   subject, room, teacher, delivery_mode
             FROM lectures
             WHERE group_id = ?
               AND lecture_date >= ?
@@ -192,6 +192,7 @@ class Planner:
                     "lecture_start_at": start_at,
                     "subject": lecture["subject"],
                     "room": lecture["room"],
+                    "delivery_mode": lecture["delivery_mode"],
                     "teacher": lecture["teacher"],
                 },
             })
