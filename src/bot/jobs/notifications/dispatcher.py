@@ -153,8 +153,10 @@ class NotificationDispatcher:
                         ZoneInfo(notification["timezone"]),
                     ).strftime("%H:%M")
                 ),
-                room=payload.get("room") or get_msg(
-                    "schedule.time_tbd", locale=locale,
+                room=(
+                    payload.get("room")
+                    or payload.get("delivery_mode")
+                    or get_msg("notifications.room_tbd", locale=locale)
                 ),
             )
 

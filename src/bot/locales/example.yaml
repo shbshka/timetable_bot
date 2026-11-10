@@ -91,6 +91,7 @@ schedule:
 
 notifications:
   prompt: "Prompt for notification preferences. Variables: {group_name}, {timezone}"
+  room_tbd: "Shown as the reminder room when a lecture has no room or delivery mode. Variables: none"
   types:
     daily_schedule: "Description for daily schedule notification type. Variables: none"
     weekly_schedule: "Description for weekly schedule notification type. Variables: none"

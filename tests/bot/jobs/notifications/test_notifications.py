@@ -112,6 +112,7 @@ def test_planner_defaults_invalid_reminder_and_skips_untimed_lecture() -> None:
             "subject": "Math",
             "room": None,
             "teacher": "Teacher",
+            "delivery_mode": None,
         },
         {
             "id": 12,
@@ -121,6 +122,7 @@ def test_planner_defaults_invalid_reminder_and_skips_untimed_lecture() -> None:
             "subject": "Untimed",
             "room": None,
             "teacher": None,
+            "delivery_mode": None,
         },
     ]
 
@@ -157,28 +159,57 @@ def test_planner_rejects_ambiguous_reminder_time() -> None:
         )
 
 
-def test_dispatcher_renders_reminder_with_timezone_and_tbd_room() -> None:
-    dispatcher = NotificationDispatcher()
-    start_at = int(datetime(2026, 10, 12, 9, tzinfo=UTC).timestamp())
-    notification = {
+def _reminder(locale: str = "en", **payload) -> dict:
+    return {
         "notification_type": "reminder",
-        "locale": "en",
+        "locale": locale,
         "group_name": "HR",
         "group_id": 7,
         "target_date": "2026-10-12",
         "timezone": "Europe/Vilnius",
         "payload_json": json.dumps({
-            "lecture_start_at": start_at,
+            "lecture_start_at": int(datetime(2026, 10, 12, 9, tzinfo=UTC).timestamp()),
             "subject": "Math",
-            "room": None,
+            **payload,
         }),
     }
 
-    rendered = dispatcher._render(notification)
+
+@pytest.mark.parametrize("locale", ["en", "ru"])
+def test_dispatcher_renders_reminder_with_timezone_and_tbd_room(locale: str) -> None:
+    rendered = NotificationDispatcher()._render(_reminder(locale, room=None))
 
     assert "Math" in rendered
     assert "12:00" in rendered
-    assert get_msg("schedule.time_tbd", locale="en") in rendered
+    assert f"<code>{get_msg('notifications.room_tbd', locale=locale)}</code>" in rendered
+    assert get_msg("schedule.time_tbd", locale=locale) not in rendered
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected_room"),
+    [
+        ({"room": "101", "delivery_mode": "online"}, "101"),
+        ({"room": None, "delivery_mode": "online"}, "online"),
+        ({"room": "", "delivery_mode": "online"}, "online"),
+    ],
+)
+def test_dispatcher_reminder_shows_room_then_delivery_mode(payload: dict, expected_room: str) -> None:
+    rendered = NotificationDispatcher()._render(_reminder(**payload))
+
+    assert f"<code>{expected_room}</code>" in rendered
+
+
+def test_planner_reminder_payload_includes_delivery_mode() -> None:
+    planner = Planner(institution_timezone=ZoneInfo("Europe/Vilnius"))
+    preference = {"id": 1, "group_id": 7, "reminder_minutes_before": 30}
+    lecture = {
+        "id": 1, "source_id": "s", "lecture_date": "2026-12-01", "lecture_time": "08:30",
+        "subject": "Math", "room": None, "teacher": None, "delivery_mode": "online",
+    }
+
+    occurrences = planner._reminder_occurrences(preference, [lecture], datetime(2026, 11, 4, tzinfo=UTC))
+
+    assert occurrences[0]["payload"]["delivery_mode"] == "online"
 
 
 @pytest.mark.parametrize("lecture_time", ["08:30", "8:30", "08:30-10:00"])
@@ -187,7 +218,7 @@ def test_planner_reminder_uses_lecture_start_time(lecture_time: str) -> None:
     preference = {"id": 1, "group_id": 7, "reminder_minutes_before": 30}
     lecture = {
         "id": 1, "source_id": "s", "lecture_date": "2026-12-01", "lecture_time": lecture_time,
-        "subject": "Math", "room": None, "teacher": None,
+        "subject": "Math", "room": None, "teacher": None, "delivery_mode": None,
     }
 
     occurrences = planner._reminder_occurrences(preference, [lecture], datetime(2026, 11, 4, tzinfo=UTC))
@@ -202,7 +233,7 @@ def test_planner_skips_reminder_for_lecture_without_readable_time() -> None:
     preference = {"id": 1, "group_id": 7, "reminder_minutes_before": 30}
     lecture = {
         "id": 1, "source_id": "s", "lecture_date": "2026-12-01", "lecture_time": "see teacher note",
-        "subject": "Math", "room": None, "teacher": None,
+        "subject": "Math", "room": None, "teacher": None, "delivery_mode": None,
     }
 
     assert planner._reminder_occurrences(preference, [lecture], datetime(2026, 11, 4, tzinfo=UTC)) == []
